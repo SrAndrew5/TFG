@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// TABLAS DE LA ENTREGA 2 (esquema académico)
+// =============================================
+
+model Usuario {
+  id         Int      @id @default(autoincrement())
+  nombre     String   @db.VarChar(100)
+  apellidos  String   @db.VarChar(150)
+  email      String   @unique @db.VarChar(255)
+  password   String   @db.VarChar(255)
+  telefono   String?  @db.VarChar(20)
+  rol        Rol      @default(CLIENTE)
+  avatar_url String?  @db.VarChar(500)
+  activo     Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  citas            Cita[]
+  reservas_recurso ReservaRecurso[]
+
+  @@map("usuarios")
+}
+
+model Empleado {
+  id           Int      @id @default(autoincrement())
+  nombre       String   @db.VarChar(100)
+  apellidos    String   @db.VarChar(150)
+  email        String   @unique @db.VarChar(255)
+  telefono     String?  @db.VarChar(20)
+  especialidad String?  @db.VarChar(200)
+  avatar_url   String?  @db.VarChar(500)
+  activo       Boolean  @default(true)
+  created_at   DateTime @default(now())
+
+  servicios        ServicioEmpleado[]
+  disponibilidades Disponibilidad[]
+  citas            Cita[]
+
+  @@map("empleados")
+}
+
+model Servicio {
+  id           Int      @id @default(autoincrement())
+  nombre       String   @db.VarChar(150)
+  descripcion  String?  @db.Text
+  duracion_min Int
+  precio       Decimal  @db.Decimal(10, 2)
+  categoria    String?  @db.VarChar(100)
+  imagen_url   String?  @db.VarChar(500)
+  activo       Boolean  @default(true)
+  created_at   DateTime @default(now())
+
+  empleados ServicioEmpleado[]
+  citas     Cita[]
+
+  @@map("servicios")
+}
+
+model ServicioEmpleado {
+  id          Int @id @default(autoincrement())
+  servicio_id Int
+  empleado_id Int
+
+  servicio Servicio @relation(fields: [servicio_id], references: [id], onDelete: Cascade)
+  empleado Empleado @relation(fields: [empleado_id], references: [id], onDelete: Cascade)
+
+  @@unique([servicio_id, empleado_id])
+  @@index([empleado_id])
+  @@map("servicios_empleados")
+}
+
+model Disponibilidad {
+  id          Int    @id @default(autoincrement())
+  empleado_id Int
+  dia_semana  Int // 0=Lunes, 1=Martes, ..., 6=Domingo
+  hora_inicio String @db.VarChar(5) // "09:00"
+  hora_fin    String @db.VarChar(5) // "18:00"
+
+  empleado Empleado @relation(fields: [empleado_id], references: [id], onDelete: Cascade)
+
+  @@index([empleado_id])
+  @@map("disponibilidades")
+}
+
+model Cita {
+  id          Int        @id @default(autoincrement())
+  usuario_id  Int
+  empleado_id Int
+  servicio_id Int
+  fecha       DateTime   @db.Date
+  hora_inicio String     @db.VarChar(5) // "10:00"
+  hora_fin    String     @db.VarChar(5) // "10:45"
+  estado      EstadoCita @default(PENDIENTE)
+  notas       String?    @db.Text
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  usuario  Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  empleado Empleado @relation(fields: [empleado_id], references: [id], onDelete: Cascade)
+  servicio Servicio @relation(fields: [servicio_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id])
+  @@index([empleado_id])
+  @@index([servicio_id])
+  @@index([fecha])
+  @@map("citas")
+}
+
+// =============================================
+// TABLAS DE EXTENSIÓN — COWORKING
+// =============================================
+
+model Recurso {
+  id           Int         @id @default(autoincrement())
+  nombre       String      @db.VarChar(150)
+  tipo         TipoRecurso
+  descripcion  String?     @db.Text
+  capacidad    Int         @default(1)
+  ubicacion    String?     @db.VarChar(200) // "Planta 2, Zona A"
+  precio_hora  Decimal     @db.Decimal(10, 2)
+  imagen_url   String?     @db.VarChar(500)
+  equipamiento String?     @db.Text // "Proyector, Pizarra, WiFi"
+  activo       Boolean     @default(true)
+  created_at   DateTime    @default(now())
+
+  reservas ReservaRecurso[]
+
+  @@map("recursos")
+}
+
+model ReservaRecurso {
+  id          Int           @id @default(autoincrement())
+  usuario_id  Int
+  recurso_id  Int
+  fecha       DateTime      @db.Date
+  hora_inicio String        @db.VarChar(5)
+  hora_fin    String        @db.VarChar(5)
+  estado      EstadoReserva @default(PENDIENTE)
+  notas       String?       @db.Text
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  recurso Recurso @relation(fields: [recurso_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id])
+  @@index([recurso_id])
+  @@index([fecha])
+  @@map("reservas_recursos")
+}
+
+// =============================================
+// ENUMS
+// =============================================
+
+enum Rol {
+  CLIENTE
+  ADMIN
+}
+
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum TipoRecurso {
+  MESA
+  SALA
+  PUESTO
+  DESPACHO
+}
