@@ -3,15 +3,21 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import Layout from './components/layout/Layout';
+import AdminLayout from './components/layout/AdminLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
+import MapView from './pages/Map';
+import UserProfile from './pages/UserProfile';
+import BookingSuccess from './pages/BookingSuccess';
 import Services from './pages/Services';
 import BookAppointment from './pages/BookAppointment';
 import MyAppointments from './pages/MyAppointments';
 import Resources from './pages/Resources';
 import BookResource from './pages/BookResource';
 import MyBookings from './pages/MyBookings';
+import AdminDashboard from './pages/admin/Dashboard';
 import ManageServices from './pages/admin/ManageServices';
 import ManageEmployees from './pages/admin/ManageEmployees';
 import ManageResources from './pages/admin/ManageResources';
@@ -40,19 +46,24 @@ function AppRoutes() {
       {/* Protected routes with layout */}
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/map" element={<MapView />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/booking-success" element={<BookingSuccess />} />
         <Route path="/services" element={<Services />} />
         <Route path="/book/:serviceId" element={<BookAppointment />} />
         <Route path="/my-appointments" element={<MyAppointments />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/book-resource/:id" element={<BookResource />} />
-        <Route path="/my-bookings" element={<MyBookings />} />
+      </Route>
 
-        {/* Admin routes */}
-        <Route path="/admin" element={<ProtectedRoute adminOnly><Dashboard /></ProtectedRoute>} />
-        <Route path="/admin/services" element={<ProtectedRoute adminOnly><ManageServices /></ProtectedRoute>} />
-        <Route path="/admin/employees" element={<ProtectedRoute adminOnly><ManageEmployees /></ProtectedRoute>} />
-        <Route path="/admin/resources" element={<ProtectedRoute adminOnly><ManageResources /></ProtectedRoute>} />
-        <Route path="/admin/appointments" element={<ProtectedRoute adminOnly><ManageAppointments /></ProtectedRoute>} />
+      {/* Admin routes with AdminLayout */}
+      <Route element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/services" element={<ManageServices />} />
+        <Route path="/admin/employees" element={<ManageEmployees />} />
+        <Route path="/admin/resources" element={<ManageResources />} />
+        <Route path="/admin/appointments" element={<ManageAppointments />} />
       </Route>
 
       {/* Catch all */}

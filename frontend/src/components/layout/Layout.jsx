@@ -5,24 +5,17 @@ import Footer from './Footer';
 /**
  * Layout Base — Arctic Clarity
  *
- * Estructura:
- *   ┌─────────────────────────────┐
- *   │  <Navbar /> — sticky top   │
- *   ├─────────────────────────────┤
- *   │                             │
- *   │  <main>                     │
- *   │    <Outlet />  ← vistas    │
- *   │  </main>                    │
- *   │                             │
- *   ├─────────────────────────────┤
- *   │  <Footer />                 │
- *   └─────────────────────────────┘
+ * Soporta dos modos de contenido:
+ *   - Estándar: max-w-7xl centrado con padding (la mayoría de páginas)
+ *   - Full-width: sin wrapper de max-width (ej. /map), la página rellena todo
  *
- * El fondo base es surface-subtle (#F8F8FF), ligeramente tintado de lavanda,
- * que diferencia el contenido del blanco puro de cards y navbar.
+ * Las rutas full-width se declaran en FULL_WIDTH_ROUTES.
  */
+const FULL_WIDTH_ROUTES = ['/map'];
+
 export default function Layout() {
   const location = useLocation();
+  const isFullWidth = FULL_WIDTH_ROUTES.some((r) => location.pathname.startsWith(r));
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8F8FF' }}>
@@ -31,17 +24,25 @@ export default function Layout() {
       <Navbar />
 
       {/* ── Área de contenido principal ── */}
-      <main className="flex-1 w-full">
-        <div
-          key={location.pathname}          /* Re-dispara animación al cambiar de ruta */
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in"
-        >
-          <Outlet />
-        </div>
+      <main className="flex-1 w-full flex flex-col">
+        {isFullWidth ? (
+          /* Full-width: la página gestiona su propio padding/overflow */
+          <div key={location.pathname} className="flex-1 flex flex-col animate-fade-in">
+            <Outlet />
+          </div>
+        ) : (
+          /* Estándar: contenedor centrado con padding */
+          <div
+            key={location.pathname}
+            className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 animate-fade-in"
+          >
+            <Outlet />
+          </div>
+        )}
       </main>
 
-      {/* ── Footer ── */}
-      <Footer />
+      {/* ── Footer (oculto en /map para maximizar el mapa) ── */}
+      {!isFullWidth && <Footer />}
     </div>
   );
 }
