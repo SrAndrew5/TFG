@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import { 
@@ -33,11 +34,27 @@ const MOCK_LOCATIONS = [
 ];
 
 export default function MapView() {
-  const [activeType, setActiveType] = useState('all');
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialType = queryParams.get('type') || 'all';
+  const targetCity = queryParams.get('location')?.toLowerCase() || '';
 
-  const filteredLocations = MOCK_LOCATIONS.filter(loc => 
-    activeType === 'all' || loc.type === activeType
-  );
+  const CITY_COORDS = {
+    madrid: [40.4168, -3.7038],
+    valencia: [39.4699, -0.3774],
+    barcelona: [41.3851, 2.1734]
+  };
+
+  const centerCoords = CITY_COORDS[targetCity] || CITY_COORDS['madrid'];
+
+  const [activeType, setActiveType] = useState(initialType);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredLocations = MOCK_LOCATIONS.filter(loc => {
+    const matchType = activeType === 'all' || loc.type === activeType;
+    const matchSearch = loc.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchType && matchSearch;
+  });
 
   return (
     <div className="flex-1 flex flex-col md:flex-row w-full h-[calc(100vh-64px)] overflow-hidden bg-surface-subtle">
@@ -55,6 +72,8 @@ export default function MapView() {
             <input 
               type="text" 
               placeholder="Buscar por zona..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-surface-elevated border border-transparent rounded-[10px] text-sm focus:bg-white focus:border-brand-300 focus:ring-4 focus:ring-brand-50 transition-all outline-none"
             />
           </div>
@@ -114,7 +133,7 @@ export default function MapView() {
               </p>
               <div className="flex justify-between items-center mt-2">
                 <span className="font-semibold text-text-primary text-sm">{loc.price}</span>
-                <span className="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-1 rounded-md">Ver detalles</span>
+                <Link to="/book/1" className="text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors px-2 py-1 rounded-md block">Ver detalles</Link>
               </div>
             </div>
           ))}
@@ -124,8 +143,9 @@ export default function MapView() {
       {/* ── Zona del Mapa (Derecha) ── */}
       <div className="flex-1 relative h-[50vh] md:h-auto z-0">
         <MapContainer 
-          center={[39.4699, -0.3763]} // Valencia, Spain (default TFG project location context roughly)
-          zoom={14} 
+          key={centerCoords.join(',')}
+          center={centerCoords} 
+          zoom={targetCity === 'valencia' ? 14 : 12} // Adjust zoom depending on if it's Valencia (where mock places are)
           zoomControl={false}
           className="w-full h-full absolute inset-0"
         >
@@ -147,9 +167,9 @@ export default function MapView() {
                 <div className="text-center p-1">
                   <h3 className="font-bold text-text-primary text-sm mb-1">{loc.name}</h3>
                   <p className="text-brand-600 font-semibold text-xs mb-2">{loc.price}</p>
-                  <button className="bg-brand-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold w-full hover:bg-brand-600 transition-colors">
+                  <Link to="/book/1" className="bg-brand-500 text-white flex justify-center items-center px-3 py-1.5 rounded-lg text-xs font-semibold w-full hover:bg-brand-600 transition-colors">
                     Reservar ahora
-                  </button>
+                  </Link>
                 </div>
               </Popup>
             </Marker>

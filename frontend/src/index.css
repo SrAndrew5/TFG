@@ -9,7 +9,7 @@
 
 @theme {
   /* ─── BRAND: Índigo Eléctrico ─── */
-  --color-brand-50:  #EEF2FF;
+  --color-brand-50: #EEF2FF;
   --color-brand-100: #E0E7FF;
   --color-brand-200: #C7D2FE;
   --color-brand-300: #A5B4FC;
@@ -19,9 +19,10 @@
   --color-brand-700: #4338CA;
   --color-brand-800: #3730A3;
   --color-brand-900: #312E81;
+  --color-brand-950: #1E1B4B;
 
   /* Alias legacy 'primary' → brand (mismos valores, sin breaks) */
-  --color-primary-50:  #EEF2FF;
+  --color-primary-50: #EEF2FF;
   --color-primary-100: #E0E7FF;
   --color-primary-200: #C7D2FE;
   --color-primary-300: #A5B4FC;
@@ -31,9 +32,10 @@
   --color-primary-700: #4338CA;
   --color-primary-800: #3730A3;
   --color-primary-900: #312E81;
+  --color-primary-950: #1E1B4B;
 
   /* ─── ACCENT: Naranja Solar ─── */
-  --color-accent-50:  #FFF7ED;
+  --color-accent-50: #FFF7ED;
   --color-accent-100: #FFEDD5;
   --color-accent-200: #FED7AA;
   --color-accent-300: #FDBA74;
@@ -43,13 +45,13 @@
   --color-accent-700: #C2410C;
 
   /* ─── SURFACES (Light mode) ─── */
-  --color-surface-base:     #FFFFFF;
-  --color-surface-subtle:   #F8F8FF;
+  --color-surface-base: #FFFFFF;
+  --color-surface-subtle: #F8F8FF;
   --color-surface-elevated: #F3F4F6;
-  --color-surface-hover:    #EEEEF8;
+  --color-surface-hover: #EEEEF8;
 
   /* Alias legacy 'surface-N' → valores light (inversión del dark mode) */
-  --color-surface-50:  #FFFFFF;
+  --color-surface-50: #FFFFFF;
   --color-surface-100: #F8F8FF;
   --color-surface-200: #F3F4F6;
   --color-surface-300: #E8E8F5;
@@ -62,46 +64,46 @@
   --color-surface-950: #0F172A;
 
   /* ─── BORDERS ─── */
-  --color-border-base:   #E8E8F5;
+  --color-border-base: #E8E8F5;
   --color-border-strong: #D1D5DB;
-  --color-border-brand:  rgba(99, 102, 241, 0.35);
+  --color-border-brand: rgba(99, 102, 241, 0.35);
 
   /* ─── TEXT ─── */
-  --color-text-primary:   #0F172A;
-  --color-text-secondary: #64748B;
-  --color-text-muted:     #94A3B8;
+  --color-text-primary: #0F172A; /* slate-900 */
+  --color-text-secondary: #334155; /* slate-700 */
+  --color-text-muted: #64748B; /* slate-500 */
 
   /* ─── SEMANTIC ─── */
-  --color-success:        #10B981;
-  --color-success-bg:     #D1FAE5;
-  --color-success-text:   #065F46;
+  --color-success: #10B981;
+  --color-success-bg: #D1FAE5;
+  --color-success-text: #065F46;
   --color-success-border: #A7F3D0;
 
-  --color-warning:        #F59E0B;
-  --color-warning-bg:     #FEF3C7;
-  --color-warning-text:   #B45309;
+  --color-warning: #F59E0B;
+  --color-warning-bg: #FEF3C7;
+  --color-warning-text: #B45309;
   --color-warning-border: #FDE68A;
 
-  --color-danger:         #EF4444;
-  --color-danger-bg:      #FEE2E2;
-  --color-danger-text:    #B91C1C;
-  --color-danger-border:  #FECACA;
+  --color-danger: #EF4444;
+  --color-danger-bg: #FEE2E2;
+  --color-danger-text: #B91C1C;
+  --color-danger-border: #FECACA;
 
-  --color-info:           #3B82F6;
-  --color-info-bg:        #DBEAFE;
-  --color-info-text:      #1D4ED8;
-  --color-info-border:    #BFDBFE;
+  --color-info: #3B82F6;
+  --color-info-bg: #DBEAFE;
+  --color-info-text: #1D4ED8;
+  --color-info-border: #BFDBFE;
 
   /* ─── TYPOGRAPHY ─── */
   --font-display: 'Sora', system-ui, -apple-system, sans-serif;
-  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
   /* ─── SHADOWS (tintadas con brand, no negro puro) ─── */
-  --shadow-xs:     0 1px 4px rgba(99, 102, 241, 0.06);
-  --shadow-sm:     0 2px 12px rgba(99, 102, 241, 0.08);
-  --shadow-md:     0 4px 20px rgba(99, 102, 241, 0.12);
-  --shadow-lg:     0 8px 32px rgba(99, 102, 241, 0.16);
-  --shadow-brand:  0 4px 16px rgba(99, 102, 241, 0.30);
+  --shadow-xs: 0 1px 4px rgba(99, 102, 241, 0.06);
+  --shadow-sm: 0 2px 12px rgba(99, 102, 241, 0.08);
+  --shadow-md: 0 4px 20px rgba(99, 102, 241, 0.12);
+  --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.16);
+  --shadow-brand: 0 4px 16px rgba(99, 102, 241, 0.30);
   --shadow-accent: 0 4px 16px rgba(249, 115, 22, 0.28);
 }
 
@@ -110,12 +112,15 @@
    ============================================= */
 
 @layer base {
-  html {
+  html, body { 
+    height: auto; 
+    min-height: 100%; 
+    overflow-y: auto !important; 
     scroll-behavior: smooth;
   }
 
   body {
-    background-color: #F8F8FF;
+    background-color: #f8fafc;
     color: #0F172A;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -123,7 +128,12 @@
     line-height: 1.6;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Sora', system-ui, -apple-system, sans-serif;
     line-height: 1.2;
     color: #0F172A;
@@ -156,166 +166,113 @@
 
   /* ── Buttons ── */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2
-           bg-gradient-to-r from-brand-500 to-brand-700
-           text-white font-semibold text-sm
-           py-2.5 px-6 rounded-[10px]
-           shadow-[0_4px_16px_rgba(99,102,241,0.30)]
-           hover:from-brand-400 hover:to-brand-600
-           hover:shadow-[0_6px_20px_rgba(99,102,241,0.40)]
-           active:scale-[0.97]
-           transition-all duration-250 cursor-pointer
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-500 to-brand-700 text-white font-semibold text-sm py-2.5 px-6 rounded-[10px] shadow-[0_4px_16px_rgba(99,102,241,0.30)] hover:from-brand-400 hover:to-brand-600 hover:shadow-[0_6px_20px_rgba(99,102,241,0.40)] active:scale-[0.97] transition-all duration-250 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2
-           bg-brand-50 text-brand-700 font-semibold text-sm
-           py-2.5 px-6 rounded-[10px]
-           border border-brand-200
-           hover:bg-brand-100 hover:border-brand-300
-           active:scale-[0.97]
-           transition-all duration-250 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 bg-brand-50 text-brand-700 font-semibold text-sm py-2.5 px-6 rounded-[10px] border border-brand-200 hover:bg-brand-100 hover:border-brand-300 active:scale-[0.97] transition-all duration-250 cursor-pointer;
   }
 
   .btn-accent {
-    @apply inline-flex items-center justify-center gap-2
-           bg-accent-500 text-white font-semibold text-sm
-           py-2.5 px-6 rounded-[10px]
-           shadow-[0_4px_16px_rgba(249,115,22,0.28)]
-           hover:bg-accent-600
-           hover:shadow-[0_6px_20px_rgba(249,115,22,0.38)]
-           active:scale-[0.97]
-           transition-all duration-250 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 bg-accent-500 text-white font-semibold text-sm py-2.5 px-6 rounded-[10px] shadow-[0_4px_16px_rgba(249,115,22,0.28)] hover:bg-accent-600 hover:shadow-[0_6px_20px_rgba(249,115,22,0.38)] active:scale-[0.97] transition-all duration-250 cursor-pointer;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2
-           bg-transparent text-text-secondary font-medium text-sm
-           py-2.5 px-5 rounded-[10px]
-           hover:bg-surface-subtle hover:text-text-primary
-           active:scale-[0.97]
-           transition-all duration-200 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 bg-transparent text-text-secondary font-medium text-sm py-2.5 px-5 rounded-[10px] hover:bg-surface-subtle hover:text-text-primary active:scale-[0.97] transition-all duration-200 cursor-pointer;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2
-           bg-danger-bg text-danger-text font-semibold text-sm
-           py-2.5 px-6 rounded-[10px]
-           border border-danger-border
-           hover:bg-[#FECACA]
-           active:scale-[0.97]
-           transition-all duration-200 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 bg-danger-bg text-danger-text font-semibold text-sm py-2.5 px-6 rounded-[10px] border border-danger-border hover:bg-[#FECACA] active:scale-[0.97] transition-all duration-200 cursor-pointer;
   }
 
   .btn-success {
-    @apply inline-flex items-center justify-center gap-2
-           bg-success-bg text-success-text font-semibold text-sm
-           py-2.5 px-6 rounded-[10px]
-           border border-success-border
-           hover:bg-[#A7F3D0]
-           active:scale-[0.97]
-           transition-all duration-200 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 bg-success-bg text-success-text font-semibold text-sm py-2.5 px-6 rounded-[10px] border border-success-border hover:bg-[#A7F3D0] active:scale-[0.97] transition-all duration-200 cursor-pointer;
+  }
+
+  /* Modal Base */
+  .modal-overlay {
+    @apply fixed inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity z-[9999];
+  }
+
+  /* Responsive Tables Core */
+  .table-wrapper { 
+    width: 100%; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+    border-radius: 1rem; 
+    border: 1px solid #e2e8f0; 
+    background: white; 
+  }
+
+  .table-pro {
+    @apply w-full min-w-[1000px] text-left border-collapse;
+  }
+
+  .table-cell-action {
+    @apply py-4 px-6 text-right whitespace-nowrap min-w-[160px];
   }
 
   /* ── Cards ── */
   .card {
-    @apply bg-white border border-border-base rounded-2xl
-           shadow-[0_2px_12px_rgba(99,102,241,0.06)]
-           transition-all duration-300;
+    @apply bg-white border border-border-base rounded-2xl shadow-[0_2px_12px_rgba(99,102,241,0.06)] transition-all duration-300;
   }
 
   .card-hover {
-    @apply bg-white border border-border-base rounded-2xl
-           shadow-[0_2px_12px_rgba(99,102,241,0.06)]
-           transition-all duration-300
-           hover:border-[rgba(99,102,241,0.35)]
-           hover:shadow-[0_8px_24px_rgba(99,102,241,0.12)]
-           hover:-translate-y-0.5;
+    @apply bg-white border border-border-base rounded-2xl shadow-[0_2px_12px_rgba(99,102,241,0.06)] transition-all duration-300 hover:border-[rgba(99,102,241,0.35)] hover:shadow-[0_8px_24px_rgba(99,102,241,0.12)] hover:-translate-y-0.5;
   }
 
   /* Legacy glass-card (páginas existentes) — mantenemos pero en light */
   .glass-card {
-    @apply bg-white border border-border-base rounded-2xl
-           shadow-[0_2px_12px_rgba(99,102,241,0.06)];
+    @apply bg-white border border-border-base rounded-2xl shadow-[0_2px_12px_rgba(99,102,241,0.06)];
   }
 
   /* ── Inputs ── */
   .input-field {
-    @apply w-full bg-surface-elevated border-[1.5px] border-border-base rounded-[10px]
-           px-4 py-3 text-text-primary text-sm
-           placeholder-text-muted
-           focus:outline-none focus:bg-white
-           focus:border-brand-500
-           focus:ring-[3px] focus:ring-[rgba(99,102,241,0.15)]
-           transition-all duration-200;
+    @apply w-full bg-surface-elevated border-[1.5px] border-border-base rounded-[10px] px-4 py-3 text-text-primary text-sm placeholder-text-muted focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-[3px] focus:ring-[rgba(99,102,241,0.15)] transition-all duration-200;
   }
 
   /* ── Badges de estado ── */
   .badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1
-           rounded-lg text-xs font-semibold;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold;
   }
 
   .badge-pending {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
-           bg-warning-bg text-warning-text border border-warning-border;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-warning-bg text-warning-text border border-warning-border;
   }
 
   .badge-confirmed {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
-           bg-success-bg text-success-text border border-success-border;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-success-bg text-success-text border border-success-border;
   }
 
   .badge-cancelled {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
-           bg-danger-bg text-danger-text border border-danger-border;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-danger-bg text-danger-text border border-danger-border;
   }
 
   .badge-completed {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
-           bg-info-bg text-info-text border border-info-border;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-info-bg text-info-text border border-info-border;
   }
 
   /* ── Stat cards (Dashboard) ── */
   .stat-card {
-    @apply bg-white border border-border-base rounded-2xl
-           shadow-[0_2px_12px_rgba(99,102,241,0.06)]
-           p-6 flex flex-col gap-2
-           hover:border-[rgba(99,102,241,0.35)]
-           hover:shadow-[0_8px_24px_rgba(99,102,241,0.12)]
-           hover:-translate-y-0.5
-           transition-all duration-300;
+    @apply bg-white border border-border-base rounded-2xl shadow-[0_2px_12px_rgba(99,102,241,0.06)] p-6 flex flex-col gap-2 hover:border-[rgba(99,102,241,0.35)] hover:shadow-[0_8px_24px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 transition-all duration-300;
   }
 
   /* ── Navbar links ── */
   .nav-link {
-    @apply flex items-center gap-2 px-3 py-2 rounded-lg
-           text-text-secondary font-medium text-sm
-           hover:bg-surface-subtle hover:text-text-primary
-           transition-all duration-200;
+    @apply flex items-center gap-2 px-3 py-2 rounded-lg text-text-secondary font-medium text-sm hover:bg-surface-subtle hover:text-text-primary transition-all duration-200;
   }
 
   .nav-link-active {
-    @apply flex items-center gap-2 px-3 py-2 rounded-lg
-           font-semibold text-sm
-           bg-brand-50 text-brand-700
-           border border-brand-100;
+    @apply flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm bg-brand-50 text-brand-700 border border-brand-100;
   }
 
   /* ── Sidebar links (legacy, redirige al light) ── */
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl
-           text-text-secondary font-medium text-sm
-           hover:bg-surface-subtle hover:text-text-primary
-           transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary font-medium text-sm hover:bg-surface-subtle hover:text-text-primary transition-all duration-200;
   }
 
   .sidebar-link-active {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl
-           font-semibold text-sm
-           bg-brand-50 text-brand-700
-           border-l-[3px] border-brand-500;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm bg-brand-50 text-brand-700 border-l-[3px] border-brand-500;
   }
 
   /* ── Section dividers ── */
@@ -343,28 +300,61 @@
    ============================================= */
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-16px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @layer utilities {
@@ -389,10 +379,21 @@
   }
 
   /* Stagger delays para listas de cards */
-  .delay-1 { animation-delay: 60ms;  }
-  .delay-2 { animation-delay: 120ms; }
-  .delay-3 { animation-delay: 180ms; }
-  .delay-4 { animation-delay: 240ms; }
+  .delay-1 {
+    animation-delay: 60ms;
+  }
+
+  .delay-2 {
+    animation-delay: 120ms;
+  }
+
+  .delay-3 {
+    animation-delay: 180ms;
+  }
+
+  .delay-4 {
+    animation-delay: 240ms;
+  }
 
   /* Gradiente de texto brand */
   .text-gradient-brand {

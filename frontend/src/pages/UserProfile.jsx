@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { 
   HiOutlineUser,
@@ -11,6 +12,16 @@ import {
 export default function UserProfile() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('info');
+  const fileInputRef = useRef(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = () => {
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      toast.success('¡Perfil actualizado con éxito!');
+    }, 1000);
+  };
 
   const TABS = [
     { id: 'info', icon: HiOutlineUser, label: 'Información Personal' },
@@ -68,13 +79,20 @@ export default function UserProfile() {
                     <span className="text-4xl font-extrabold text-white tracking-widest uppercase">
                       {user?.nombre?.charAt(0)}{user?.apellidos?.charAt(0)}
                     </span>
-                    <div className="absolute inset-0 bg-brand-900/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute inset-0 bg-brand-900/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    >
                       <HiOutlineCamera className="w-8 h-8 text-white" />
                     </div>
                   </div>
-                  <button className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border border-border-base shadow-sm flex items-center justify-center hover:bg-surface-elevated text-brand-600 transition-colors">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border border-border-base shadow-sm flex items-center justify-center hover:bg-surface-elevated text-brand-600 transition-colors"
+                  >
                     <HiOutlineCamera className="w-5 h-5" />
                   </button>
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
                 </div>
 
                 <div className="flex-1 w-full space-y-5">
@@ -116,9 +134,15 @@ export default function UserProfile() {
               </div>
 
               <div className="border-t border-border-base pt-6 flex justify-end">
-                <button className="btn-primary">
-                  <HiOutlineCheck className="w-4.5 h-4.5" />
-                  Guardar Cambios
+                <button onClick={handleSave} disabled={saving} className="btn-primary w-48 flex justify-center items-center">
+                  {saving ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <HiOutlineCheck className="w-4.5 h-4.5 mr-2" />
+                      Guardar Cambios
+                    </>
+                  )}
                 </button>
               </div>
             </div>

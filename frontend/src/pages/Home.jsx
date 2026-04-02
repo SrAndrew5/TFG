@@ -12,6 +12,7 @@ import {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('coworking');
+  const [locationInput, setLocationInput] = useState('');
 
   return (
     <div className="space-y-16 pb-12">
@@ -76,7 +77,9 @@ export default function Home() {
                 <HiOutlineMapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
                 <input 
                   type="text" 
-                  placeholder="¿Dónde quieres ir?" 
+                  placeholder="¿Dónde quieres ir? (Ej: Madrid)" 
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 bg-surface-subtle border border-transparent rounded-xl text-sm focus:bg-white focus:border-brand-300 focus:ring-4 focus:ring-brand-50 transition-all outline-none"
                 />
               </div>
@@ -87,7 +90,7 @@ export default function Home() {
                   className="w-full pl-11 pr-4 py-3.5 bg-surface-subtle border border-transparent rounded-xl text-sm focus:bg-white focus:border-brand-300 focus:ring-4 focus:ring-brand-50 transition-all outline-none text-text-secondary"
                 />
               </div>
-              <Link to="/map" className="btn-primary py-3.5 px-8 sm:w-auto w-full text-base">
+              <Link to={`/map?type=${activeTab}&location=${encodeURIComponent(locationInput.trim())}`} className="btn-primary py-3.5 px-8 sm:w-auto w-full text-base flex justify-center items-center">
                 Buscar
               </Link>
             </div>
@@ -139,9 +142,9 @@ export default function Home() {
                 
                 <div className="mt-auto flex items-center justify-between pt-4 border-t border-border-base">
                   <span className="font-bold text-text-primary">{item.price}</span>
-                  <button className={`${item.isAccent ? 'btn-accent' : 'btn-primary'} px-4 py-1.5 text-xs rounded-lg`}>
+                  <Link to="/book/1" className={`${item.isAccent ? 'btn-accent' : 'btn-primary'} px-4 py-1.5 text-xs rounded-lg inline-block text-center`}>
                     Reservar
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>

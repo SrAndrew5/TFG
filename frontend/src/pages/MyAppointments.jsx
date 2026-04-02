@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 import toast from 'react-hot-toast';
 import { 
@@ -8,13 +9,24 @@ import {
   HiOutlineEye,
   HiOutlineScissors,
   HiOutlineMapPin,
-  HiOutlineFaceFrown
+  HiOutlineFaceFrown,
+  HiOutlineTicket,
+  HiOutlineUser,
+  HiOutlineExclamationTriangle
 } from 'react-icons/hi2';
 
 export default function MyAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('proximas');
+  
+  // Estado para el Modal
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
+  // Estados para cancelar cita
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [canceling, setCanceling] = useState(false);
 
   useEffect(() => { loadAppointments(); }, []);
 
@@ -30,14 +42,23 @@ export default function MyAppointments() {
     }
   };
 
-  const cancelAppointment = async (id) => {
-    if (!confirm('¿Seguro que quieres cancelar esta cita? No se puede deshacer.')) return;
+  const requestCancel = (id) => {
+    setAppointmentToCancel(id);
+    setCancelModalOpen(true);
+  };
+
+  const confirmCancelAction = async () => {
+    setCanceling(true);
     try {
-      await api.put(`/appointments/${id}/status`, { estado: 'CANCELADA' });
+      await api.put(`/appointments/${appointmentToCancel}/status`, { estado: 'CANCELADA' });
       toast.success('Cita cancelada correctamente');
       loadAppointments();
     } catch {
       toast.error('Error al cancelar la cita');
+    } finally {
+      setCanceling(false);
+      setCancelModalOpen(false);
+      setAppointmentToCancel(null);
     }
   };
 
@@ -180,13 +201,17 @@ export default function MyAppointments() {
                   </span>
                   
                   <div className="flex gap-2">
-                    <button className="btn-secondary px-3 py-2 text-xs" title="Ver Ticket">
+                    <button 
+                      className="btn-secondary px-3 py-2 text-xs" 
+                      title="Ver Ticket"
+                      onClick={() => setSelectedAppointment(cita)}
+                    >
                       <HiOutlineEye className="w-4 h-4" />
                       Detalles
                     </button>
                     {isCancelable && (
                       <button 
-                        onClick={() => cancelAppointment(cita.id)} 
+                        onClick={() => requestCancel(cita.id)} 
                         className="btn-danger px-3 py-2 text-xs bg-white hover:bg-danger-bg text-danger-text opacity-0 group-hover:opacity-100 transition-opacity md:flex" 
                         title="Cancelar cita"
                       >
@@ -202,6 +227,163 @@ export default function MyAppointments() {
           })}
         </div>
       )}
+
+      {/* ── Espectacular Modal de Detalles de Cita ── */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop con Blur */}
+          <div 
+            className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setSelectedAppointment(null)}
+          ></div>
+          
+          {/* Contenedor del Modal */}
+          <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(31,41,55,0.15)] max-w-lg w-full relative z-10 animate-scale-in flex flex-col overflow-hidden border border-border-base">
+            
+            {/* Header del Modal */}
+            <div className="p-6 border-b border-border-base bg-surface-subtle/50 flex justify-between items-start relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                 <HiOutlineTicket className="w-32 h-32 text-brand-900 -rotate-12" />
+              </div>
+              
+              <div className="relative z-10 pr-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="px-2.5 py-1 bg-white border border-border-base rounded-md text-[10px] font-bold text-text-secondary uppercase tracking-widest">
+                    Ticket #{selectedAppointment.id.toString().padStart(4, '0')}
+                  </span>
+                  {getStatusBadge(selectedAppointment.estado)}
+                </div>
+                <h2 className="text-2xl font-bold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  {selectedAppointment.servicio?.nombre || 'Servicio Reservado'}
+                </h2>
+              </div>
+              <button 
+                onClick={() => setSelectedAppointment(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-surface-elevated text-text-secondary hover:bg-brand-50 hover:text-brand-600 transition-colors z-10 flex-shrink-0"
+              >
+                <HiOutlineXMark className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Cuerpo del Modal (Cuadrícula / Grid) */}
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-surface-elevated p-4 rounded-2xl border border-border-base/50">
+                   <div className="flex items-center gap-2 text-brand-500 mb-1">
+                     <HiOutlineCalendar className="w-5 h-5" />
+                     <p className="text-xs font-bold uppercase tracking-wide">Fecha y Hora</p>
+                   </div>
+                   <p className="text-sm font-semibold text-text-primary mt-2">
+                     {new Date(selectedAppointment.fecha).toLocaleDateString('es-ES', { weekday: 'short', month: 'long', day: 'numeric' })}
+                   </p>
+                   <p className="text-sm text-text-secondary font-medium">
+                     {selectedAppointment.hora_inicio} - {selectedAppointment.hora_fin}
+                   </p>
+                </div>
+                
+                <div className="bg-surface-elevated p-4 rounded-2xl border border-border-base/50">
+                   <div className="flex items-center gap-2 text-brand-500 mb-1">
+                     <HiOutlineUser className="w-5 h-5" />
+                     <p className="text-xs font-bold uppercase tracking-wide">Profesional</p>
+                   </div>
+                   <p className="text-sm font-semibold text-text-primary mt-2">
+                     {selectedAppointment.empleado?.nombre} {selectedAppointment.empleado?.apellidos}
+                   </p>
+                   <p className="text-sm text-text-muted font-medium">Especialista</p>
+                </div>
+
+                <div className="bg-surface-elevated p-4 rounded-2xl border border-border-base/50 col-span-2 flex justify-between items-center group">
+                   <div>
+                     <div className="flex items-center gap-2 text-brand-500 mb-1">
+                       <HiOutlineMapPin className="w-5 h-5" />
+                       <p className="text-xs font-bold uppercase tracking-wide">Ubicación</p>
+                     </div>
+                     <p className="text-sm font-semibold text-text-primary mt-1">
+                       Local Principal - Zona de Peluquería
+                     </p>
+                   </div>
+                   <Link to="/map?location=valencia" className="text-xs font-bold text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg group-hover:bg-brand-100 transition-colors">
+                     Ver en mapa
+                   </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Desglose de Precio y Footer */}
+            <div className="px-6 py-5 bg-surface-subtle/30 border-t border-border-base mt-auto">
+              <div className="space-y-2 mb-6">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-text-secondary font-medium">Precio Base</span>
+                  <span className="text-text-primary font-semibold">
+                    {(parseFloat(selectedAppointment.servicio?.precio || 0) * 0.79).toFixed(2)}€
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-text-secondary font-medium">IVA (21%)</span>
+                  <span className="text-text-primary font-semibold">
+                    {(parseFloat(selectedAppointment.servicio?.precio || 0) * 0.21).toFixed(2)}€
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-border-base border-dashed mt-2">
+                  <span className="text-text-primary font-extrabold uppercase tracking-widest text-xs">Total</span>
+                  <span className="text-2xl font-extrabold text-brand-700" style={{ fontFamily: 'Sora, sans-serif' }}>
+                    {parseFloat(selectedAppointment.servicio?.precio || 0).toFixed(2)}€
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setSelectedAppointment(null)}
+                className="w-full py-3.5 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-sm tracking-wide rounded-xl border border-brand-200/50 transition-colors"
+              >
+                Cerrar Detalles
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
+      {/* ── Danger Modal para Confirmación de Cancelación ── */}
+      {cancelModalOpen && appointmentToCancel && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 text-center">
+          <div className="absolute inset-0 bg-brand-950/40 backdrop-blur-md transition-opacity" onClick={() => !canceling && setCancelModalOpen(false)}></div>
+          
+          <div className="inline-block bg-white rounded-3xl shadow-[0_24px_60px_rgba(31,41,55,0.2)] max-w-sm w-full relative z-10 animate-scale-in overflow-hidden border border-border-base/50 p-8 text-center text-left align-middle transition-all transform">
+            <div className="w-20 h-20 bg-danger-bg rounded-full mx-auto flex items-center justify-center mb-6 shadow-[0_4px_24px_rgba(239,68,68,0.25)]">
+              <HiOutlineExclamationTriangle className="w-10 h-10 text-danger-text" />
+            </div>
+            
+            <h3 className="text-2xl font-bold text-text-primary mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+              Cancelar Reserva
+            </h3>
+            
+            <p className="text-sm text-text-secondary mb-8">
+              ¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer y el tramo horario quedará libre para otros clientes.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+              <button 
+                type="button" 
+                onClick={() => setCancelModalOpen(false)} 
+                disabled={canceling} 
+                className="w-full btn-secondary bg-surface-elevated hover:bg-surface-300 border-transparent py-3 text-sm font-bold"
+              >
+                Cerrar
+              </button>
+              <button 
+                type="button" 
+                onClick={confirmCancelAction} 
+                disabled={canceling} 
+                className="w-full btn-danger flex items-center justify-center py-3 text-sm font-bold tracking-wide transition-colors duration-200"
+              >
+                {canceling ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Sí, Cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   HiOutlineBanknotes, 
   HiOutlineCalendar, 
@@ -13,7 +15,16 @@ import {
 } from 'react-icons/hi2';
 
 export default function AdminDashboard() {
-  const [loading, setLoading] = useState(false); // Simulate loading state
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // Estados de interactividad interactividad
+  const [reservas, setReservas] = useState([]);
+  const [processingId, setProcessingId] = useState(null);
+  
+  // Modal Detalles
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [viewingReserva, setViewingReserva] = useState(null);
 
   // Dummy Admin Stats para UI
   const DUMMY_STATS = {
@@ -24,12 +35,30 @@ export default function AdminDashboard() {
   };
 
   const DUMMY_RESERVAS = [
-    { id: '#REV-092', user: 'Ana Martínez', service: 'Corte de Pelo + Peinado', date: 'Hoy, 16:30', amount: '25.00€', status: 'PENDIENTE' },
-    { id: '#REV-091', user: 'Carlos Ruiz', service: 'Sala de Juntas (Coworking)', date: 'Hoy, 12:00', amount: '45.00€', status: 'CONFIRMADA' },
-    { id: '#REV-090', user: 'María López', service: 'Puesto Flex', date: 'Ayer, 09:00', amount: '15.00€', status: 'COMPLETADA' },
-    { id: '#REV-089', user: 'Javier Gil', service: 'Afeitado Clásico', date: 'Ayer, 18:15', amount: '18.00€', status: 'CANCELADA' },
-    { id: '#REV-088', user: 'Laura Torres', service: 'Tinte + Mechas Balayage', date: '10 May, 11:30', amount: '65.00€', status: 'CONFIRMADA' },
+    { id: '#REV-092', user: 'Ana Martínez', service: 'Corte de Pelo + Peinado', date: 'Hoy, 16:30', amount: '25.00€', status: 'PENDIENTE', employee: 'David Ortega' },
+    { id: '#REV-091', user: 'Carlos Ruiz', service: 'Sala de Juntas (Coworking)', date: 'Hoy, 12:00', amount: '45.00€', status: 'CONFIRMADA', employee: 'Sin asignar' },
+    { id: '#REV-090', user: 'María López', service: 'Puesto Flex', date: 'Ayer, 09:00', amount: '15.00€', status: 'COMPLETADA', employee: 'Sin asignar' },
+    { id: '#REV-089', user: 'Javier Gil', service: 'Afeitado Clásico', date: 'Ayer, 18:15', amount: '18.00€', status: 'CANCELADA', employee: 'Lucía Fernández' },
+    { id: '#REV-088', user: 'Laura Torres', service: 'Tinte + Mechas Balayage', date: '10 May, 11:30', amount: '65.00€', status: 'CONFIRMADA', employee: 'Clara Santos' },
   ];
+
+  useEffect(() => {
+    setReservas(DUMMY_RESERVAS);
+  }, []);
+
+  const handleApprove = (id) => {
+    setProcessingId(id);
+    setTimeout(() => {
+      setReservas(reservas.map(res => res.id === id ? { ...res, status: 'CONFIRMADA' } : res));
+      setProcessingId(null);
+      toast.success('Reserva confirmada exitosamente');
+    }, 500);
+  };
+
+  const handleOpenDetails = (reserva) => {
+    setViewingReserva(reserva);
+    setDetailsModalOpen(true);
+  };
 
   const getStatusBadge = (estado) => {
     const map = { 
@@ -76,8 +105,8 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* KPI 2 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-border-base relative overflow-hidden group">
+        {/* KPI 2 - ENLACE A RESERVAS */}
+        <div onClick={() => navigate('/admin/appointments')} className="bg-white p-6 rounded-2xl shadow-sm border border-border-base relative overflow-hidden group cursor-pointer hover:border-brand-300 hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4 relative z-10">
             <div className="w-10 h-10 rounded-xl bg-info-bg flex items-center justify-center text-info-text">
               <HiOutlineCalendar className="w-5 h-5" />
@@ -92,8 +121,8 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* KPI 3 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-border-base relative overflow-hidden group">
+        {/* KPI 3 - ENLACE A USUARIOS */}
+        <div onClick={() => navigate('/admin/users')} className="bg-white p-6 rounded-2xl shadow-sm border border-border-base relative overflow-hidden group cursor-pointer hover:border-brand-300 hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4 relative z-10">
             <div className="w-10 h-10 rounded-xl bg-accent-50 flex items-center justify-center text-accent-600">
               <HiOutlineUsers className="w-5 h-5" />
@@ -133,62 +162,68 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-bold text-text-primary mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>Últimas Reservas</h2>
             <p className="text-sm text-text-secondary">Se muestran las 5 reservas creadas recientemente hoy.</p>
           </div>
-          <button className="btn-secondary whitespace-nowrap text-xs">
+          <button onClick={() => navigate('/admin/appointments')} className="btn-secondary whitespace-nowrap text-xs">
             Ver todas las reservas
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="table-wrapper">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-subtle/50 text-xs uppercase tracking-wider text-text-muted border-b border-border-base">
-                <th className="font-bold py-4 px-6 md:px-8">ID Reserva</th>
-                <th className="font-bold py-4 px-6 md:px-8">Usuario</th>
-                <th className="font-bold py-4 px-6 md:px-8">Servicio/Espacio</th>
-                <th className="font-bold py-4 px-6 md:px-8">Fecha/Hora</th>
-                <th className="font-bold py-4 px-6 md:px-8">Precio</th>
-                <th className="font-bold py-4 px-6 md:px-8">Estado</th>
-                <th className="font-bold py-4 px-6 md:px-8 text-right">Acción</th>
+                <th className="font-bold py-4 px-2 w-16 whitespace-nowrap text-xs">ID</th>
+                <th className="font-bold py-4 px-2 w-28 whitespace-nowrap text-xs">Usuario</th>
+                <th className="font-bold py-4 px-2 w-32 whitespace-nowrap text-xs">Servicio/Espacio</th>
+                <th className="font-bold py-4 px-2 w-28 whitespace-nowrap text-xs">Fecha/Hora</th>
+                <th className="font-bold py-4 px-2 w-20 whitespace-nowrap text-xs">Precio</th>
+                <th className="font-bold py-4 px-2 w-20 whitespace-nowrap text-xs">Estado</th>
+                <th className="table-cell-action pr-2 text-xs">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-base">
-              {DUMMY_RESERVAS.map((reserva, idx) => (
+              {reservas.map((reserva, idx) => (
                 <tr key={idx} className="hover:bg-surface-subtle transition-colors group">
-                  <td className="py-4 px-6 md:px-8 font-semibold text-text-primary text-sm whitespace-nowrap">
+                  <td className="py-3 px-2 font-semibold text-text-primary text-xs whitespace-nowrap">
                     {reserva.id}
                   </td>
-                  <td className="py-4 px-6 md:px-8 text-sm text-text-secondary whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs uppercase">
+                  <td className="py-3 px-2 text-xs text-text-secondary">
+                    <div className="flex items-center gap-2 max-w-[110px]">
+                      <div className="w-6 h-6 shrink-0 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-[10px] uppercase">
                         {reserva.user.charAt(0)}
                       </div>
-                      <span className="font-medium text-text-primary">{reserva.user}</span>
+                      <span className="font-medium text-text-primary truncate">{reserva.user}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-6 md:px-8 text-sm text-text-secondary whitespace-nowrap">
+                  <td className="py-3 px-2 text-xs text-text-secondary max-w-[120px] truncate leading-tight">
                     {reserva.service}
                   </td>
-                  <td className="py-4 px-6 md:px-8 text-sm text-text-secondary whitespace-nowrap">
+                  <td className="py-3 px-2 text-xs text-text-secondary whitespace-nowrap">
                     {reserva.date}
                   </td>
-                  <td className="py-4 px-6 md:px-8 text-sm font-bold text-text-primary whitespace-nowrap">
+                  <td className="py-3 px-2 text-xs font-bold text-text-primary whitespace-nowrap">
                     {reserva.amount}
                   </td>
-                  <td className="py-4 px-6 md:px-8 whitespace-nowrap">
+                  <td className="py-3 px-2 whitespace-nowrap">
                     {getStatusBadge(reserva.status)}
                   </td>
-                  <td className="py-4 px-6 md:px-8 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="table-cell-action pr-2 min-w-[100px]">
+                    <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-50 sm:group-hover:opacity-100 transition-opacity">
                       {reserva.status === 'PENDIENTE' && (
-                         <button className="w-8 h-8 rounded-lg bg-success-bg text-success-text hover:bg-[#A7F3D0] flex items-center justify-center transition-colors" title="Confirmar">
-                           <HiOutlineCheck className="w-4 h-4" />
+                         <button 
+                           onClick={() => handleApprove(reserva.id)}
+                           disabled={processingId === reserva.id}
+                           className="w-8 h-8 rounded-lg bg-success-bg text-success-text hover:bg-[#A7F3D0] flex items-center justify-center transition-colors" 
+                           title="Confirmar"
+                         >
+                           {processingId === reserva.id ? (
+                             <div className="w-4 h-4 rounded-full border-2 border-success border-t-transparent animate-spin" />
+                           ) : (
+                             <HiOutlineCheck className="w-4 h-4" />
+                           )}
                          </button>
                       )}
-                      <button className="w-8 h-8 rounded-lg bg-surface-elevated hover:bg-surface-300 text-text-secondary flex items-center justify-center transition-colors">
+                      <button onClick={() => handleOpenDetails(reserva)} className="w-8 h-8 rounded-lg bg-surface-elevated hover:bg-surface-300 text-text-secondary flex items-center justify-center transition-colors" title="Ver detalles">
                         <HiOutlineEye className="w-4 h-4" />
-                      </button>
-                      <button className="w-8 h-8 rounded-lg bg-surface-elevated hover:bg-surface-300 text-text-secondary flex items-center justify-center transition-colors">
-                        <HiOutlineEllipsisVertical className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
@@ -197,13 +232,60 @@ export default function AdminDashboard() {
             </tbody>
           </table>
           
-          {DUMMY_RESERVAS.length === 0 && (
+          {reservas.length === 0 && (
             <div className="p-8 text-center text-text-muted text-sm">
               No se encontraron registros recientes.
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Modal de Detalles Visual (Ojo) ── */}
+      {detailsModalOpen && viewingReserva && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity" onClick={() => setDetailsModalOpen(false)}></div>
+          
+          <div className="bg-white rounded-[2rem] shadow-[0_24px_60px_rgba(31,41,55,0.2)] max-w-md w-full relative z-10 animate-scale-in flex flex-col overflow-hidden border border-border-base/50">
+            <div className="px-8 py-6 border-b border-border-base bg-gradient-to-b from-surface-subtle/80 to-white flex justify-between items-center relative">
+               <div>
+                <h2 className="text-xl font-extrabold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  Detalles de la Reserva
+                </h2>
+                <p className="text-xs text-text-secondary font-medium tracking-wide mt-1">{viewingReserva.id}</p>
+              </div>
+              <button onClick={() => setDetailsModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors flex-shrink-0">
+                <HiOutlineXMark className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-4">
+              <div className="flex justify-between items-center border-b border-border-base pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-text-muted">Cliente</span>
+                <span className="text-sm font-semibold text-text-primary">{viewingReserva.user}</span>
+              </div>
+              <div className="flex justify-between items-center border-b border-border-base pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-text-muted">Servicio</span>
+                <span className="text-sm font-semibold text-text-primary">{viewingReserva.service}</span>
+              </div>
+              <div className="flex justify-between items-center border-b border-border-base pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-text-muted">Especialista</span>
+                <span className="text-sm font-semibold text-text-primary">{viewingReserva.employee || 'Sin asignar'}</span>
+              </div>
+              <div className="flex justify-between items-center pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-text-muted">Estado actual</span>
+                {getStatusBadge(viewingReserva.status)}
+              </div>
+            </div>
+
+            <div className="px-8 py-5 bg-surface-subtle/50 border-t border-border-base flex justify-end">
+              <button type="button" onClick={() => setDetailsModalOpen(false)} className="btn-secondary bg-white border-border-strong px-6 py-3">
+                Cerrar panel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -14,14 +14,11 @@ import BookingSuccess from './pages/BookingSuccess';
 import Services from './pages/Services';
 import BookAppointment from './pages/BookAppointment';
 import MyAppointments from './pages/MyAppointments';
-import Resources from './pages/Resources';
-import BookResource from './pages/BookResource';
-import MyBookings from './pages/MyBookings';
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageServices from './pages/admin/ManageServices';
 import ManageEmployees from './pages/admin/ManageEmployees';
-import ManageResources from './pages/admin/ManageResources';
 import ManageAppointments from './pages/admin/ManageAppointments';
+import ManageUsers from './pages/admin/ManageUsers';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -53,16 +50,14 @@ function AppRoutes() {
         <Route path="/services" element={<Services />} />
         <Route path="/book/:serviceId" element={<BookAppointment />} />
         <Route path="/my-appointments" element={<MyAppointments />} />
-        <Route path="/resources" element={<Resources />} />
-        <Route path="/book-resource/:id" element={<BookResource />} />
       </Route>
 
       {/* Admin routes with AdminLayout */}
       <Route element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<ManageUsers />} />
         <Route path="/admin/services" element={<ManageServices />} />
         <Route path="/admin/employees" element={<ManageEmployees />} />
-        <Route path="/admin/resources" element={<ManageResources />} />
         <Route path="/admin/appointments" element={<ManageAppointments />} />
       </Route>
 

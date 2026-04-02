@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { HiOutlineCheckCircle, HiOutlineCalendar, HiOutlineClipboardDocumentList } from 'react-icons/hi2';
 
 export default function BookingSuccess() {
@@ -47,6 +48,7 @@ export default function BookingSuccess() {
           Ir a Mis Reservas
         </button>
         <button 
+          onClick={() => toast.success('Evento añadido a tu calendario local 🎉')}
           className="btn-secondary py-3.5 px-8 w-full sm:w-auto text-base flex justify-center bg-white border-border-strong hover:border-brand-400"
         >
           <HiOutlineCalendar className="w-5 h-5 mr-2" />

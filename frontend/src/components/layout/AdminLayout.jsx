@@ -1,28 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  HiOutlineChartPie, 
-  HiOutlineCalendar, 
-  HiOutlineScissors, 
-  HiOutlineUsers, 
+import {
+  HiOutlineChartPie,
+  HiOutlineCalendar,
+  HiOutlineScissors,
+  HiOutlineUsers,
   HiOutlineCog6Tooth,
   HiOutlineBars3,
   HiOutlineXMark,
-  HiOutlineArrowRightOnRectangle
+  HiOutlineArrowRightOnRectangle,
+  HiOutlineBriefcase
 } from 'react-icons/hi2';
 
 const ADMIN_LINKS = [
   { to: '/admin', icon: HiOutlineChartPie, label: 'Dashboard' },
   { to: '/admin/appointments', icon: HiOutlineCalendar, label: 'Reservas' },
   { to: '/admin/services', icon: HiOutlineScissors, label: 'Servicios' },
-  { to: '/admin/employees', icon: HiOutlineUsers, label: 'Usuarios' },
-  { to: '/admin/settings', icon: HiOutlineCog6Tooth, label: 'Ajustes' },
+  { to: '/admin/users', icon: HiOutlineUsers, label: 'Usuarios / Clientes' },
+  { to: '/admin/employees', icon: HiOutlineBriefcase, label: 'Equipo / Especialistas' },
 ];
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Close mobile sidebar on route change
@@ -36,10 +38,10 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-surface-subtle overflow-hidden">
-      
+    <div className="h-screen flex bg-surface-subtle overflow-hidden">
+
       {/* ── Mobile Hamburger ── */}
-      <button 
+      <button
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 bg-white p-2.5 rounded-xl shadow-[0_2px_12px_rgba(31,41,55,0.08)] border border-border-base text-text-primary"
       >
@@ -48,15 +50,15 @@ export default function AdminLayout() {
 
       {/* ── Overlay Sidebar Mobile ── */}
       {mobileOpen && (
-        <div 
+        <div
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 bg-brand-900/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
         />
       )}
 
       {/* ── Sidebar (Índigo Profundo) ── */}
-      <aside className={`fixed lg:static top-0 left-0 w-72 h-screen z-50 transform transition-transform duration-300 ease-in-out bg-brand-900 text-white flex flex-col ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        
+      <aside className={`fixed lg:static top-0 left-0 w-72 h-screen flex-shrink-0 z-50 transform transition-transform duration-300 ease-in-out bg-brand-900 text-white flex flex-col ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+
         {/* Header Sidebar */}
         <div className="h-20 flex items-center px-6 border-b border-brand-800 justify-between">
           <div className="flex items-center gap-3">
@@ -88,16 +90,15 @@ export default function AdminLayout() {
         {/* Links Navegación */}
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
           <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-brand-400/80 mb-3 mt-2">Menú Principal</p>
-          
+
           {ADMIN_LINKS.map(link => (
             <Link
               key={link.to}
               to={link.to}
-              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
-                isActive(link.to)
-                  ? 'bg-brand-600 text-white shadow-brand' 
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${isActive(link.to)
+                  ? 'bg-brand-600 text-white shadow-brand'
                   : 'text-brand-200 hover:bg-brand-800/70 hover:text-white'
-              }`}
+                }`}
             >
               <link.icon className={`w-5 h-5 transition-transform duration-200 ${isActive(link.to) ? 'scale-110 text-white' : 'text-brand-400 group-hover:text-brand-300'}`} />
               {link.label}
@@ -107,7 +108,7 @@ export default function AdminLayout() {
 
         {/* Cierre Sesión Sidebar */}
         <div className="p-4 border-t border-brand-800">
-          <button 
+          <button
             onClick={logout}
             className="flex items-center gap-3 px-3.5 py-3 w-full rounded-xl text-sm font-semibold text-brand-200 hover:bg-danger-bg hover:text-danger-text hover:shadow-sm transition-all duration-200"
           >
@@ -118,16 +119,23 @@ export default function AdminLayout() {
       </aside>
 
       {/* ── Contenido Principal (Right Panel) ── */}
-      <main className="flex-1 h-screen overflow-y-auto flex flex-col">
+      <main className="flex-1 h-screen overflow-y-auto flex flex-col min-w-0">
         {/* Header Superior del Contenido (Desplazado en móvil por el botón de menú) */}
-        <header className="h-20 lg:flex hidden items-center px-8 bg-white/80 backdrop-blur-md border-b border-border-base sticky top-0 z-30 shadow-[0_2px_12px_rgba(99,102,241,0.02)]">
+        <header className="h-20 lg:flex hidden items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-border-base sticky top-0 z-30 shadow-[0_2px_12px_rgba(99,102,241,0.02)]">
           <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
             {ADMIN_LINKS.find(link => isActive(link.to))?.label || 'Panel de Administración'}
           </h2>
+          <button 
+            onClick={() => navigate('/')} 
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-surface-elevated border border-border-base text-text-secondary hover:bg-danger-bg hover:text-danger-text hover:border-danger-border transition-all shadow-sm"
+            title="Salir al Home"
+          >
+            <HiOutlineXMark className="w-5 h-5" />
+          </button>
         </header>
-        
+
         {/* Outlet para inyectar vistas (Dashboard, Tabla) */}
-        <div className="flex-1 p-4 pt-20 lg:pt-8 sm:p-8 w-full max-w-7xl mx-auto">
+        <div className="flex-1 p-4 pt-20 lg:pt-8 sm:p-8 w-full">
           <Outlet />
         </div>
       </main>
