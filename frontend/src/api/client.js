@@ -5,7 +5,7 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Interceptor: añadir token JWT a cada petición
+// ── Interceptor REQUEST: añade el token JWT a cada petición ──
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -14,7 +14,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor: manejar errores de autenticación
+// ── Interceptor RESPONSE: si el token caduca, limpia sesión y redirige ──
 api.interceptors.response.use(
   (response) => response,
   (error) => {

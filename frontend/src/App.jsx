@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationsProvider } from './context/NotificationsContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import AdminLayout from './components/layout/AdminLayout';
@@ -71,31 +72,34 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#FFFFFF',
-              color: '#0F172A',
-              border: '1.5px solid #E8E8F5',
-              borderRadius: '12px',
-              fontSize: '14px',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: '500',
-              boxShadow: '0 8px 32px rgba(99, 102, 241, 0.14)',
-            },
-            success: {
-              iconTheme: { primary: '#10B981', secondary: '#FFFFFF' },
-              style: { borderLeft: '4px solid #10B981' },
-            },
-            error: {
-              iconTheme: { primary: '#EF4444', secondary: '#FFFFFF' },
-              style: { borderLeft: '4px solid #EF4444' },
-            },
-          }}
-        />
+        {/* NotificationsProvider envuelve toda la app — el estado persiste entre rutas */}
+        <NotificationsProvider>
+          <AppRoutes />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#FFFFFF',
+                color: '#0F172A',
+                border: '1.5px solid #E8E8F5',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: '500',
+                boxShadow: '0 8px 32px rgba(99, 102, 241, 0.14)',
+              },
+              success: {
+                iconTheme: { primary: '#10B981', secondary: '#FFFFFF' },
+                style: { borderLeft: '4px solid #10B981' },
+              },
+              error: {
+                iconTheme: { primary: '#EF4444', secondary: '#FFFFFF' },
+                style: { borderLeft: '4px solid #EF4444' },
+              },
+            }}
+          />
+        </NotificationsProvider>
       </AuthProvider>
     </BrowserRouter>
   );

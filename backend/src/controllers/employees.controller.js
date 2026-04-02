@@ -115,6 +115,31 @@ async function update(req, res, next) {
 }
 
 /**
+ * PUT /api/employees/:id/toggle (Admin) — Soft delete o reactivar
+ */
+async function toggleActive(req, res, next) {
+  try {
+    const empleado = await prisma.empleado.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!empleado) {
+      return res.status(404).json({ success: false, message: 'Empleado no encontrado' });
+    }
+
+    const updated = await prisma.empleado.update({
+      where: { id: empleado.id },
+      data: { activo: !empleado.activo }
+    });
+
+    res.json({
+      success: true,
+      message: updated.activo ? 'Empleado reactivado' : 'Empleado dado de baja',
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * POST /api/employees/:id/services (Admin) — Asignar servicio a empleado
  */
 async function assignService(req, res, next) {
@@ -162,4 +187,4 @@ async function removeService(req, res, next) {
   }
 }
 
-module.exports = { getAll, getById, create, update, assignService, removeService };
+module.exports = { getAll, getById, create, update, toggleActive, assignService, removeService };
