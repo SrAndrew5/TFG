@@ -10,6 +10,8 @@ import {
   HiOutlineUser,
   HiOutlineCheckCircle
 } from 'react-icons/hi2';
+import DiscountCodeInput from '../components/shared/DiscountCodeInput';
+import PaymentModal from '../components/shared/PaymentModal';
 
 export default function BookAppointment() {
   const { serviceId } = useParams();
@@ -25,9 +27,9 @@ export default function BookAppointment() {
   const [loading, setLoading] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState(false);
-
-  // Intentos de reserva para mostrar errores (UX)
   const [hasAttempted, setHasAttempted] = useState(false);
+  const [discount, setDiscount] = useState(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   useEffect(() => {
     api.get(`/services/${serviceId}`)
@@ -69,7 +71,11 @@ export default function BookAppointment() {
       toast.error('Por favor completa todos los pasos obligatorios');
       return;
     }
-    
+    // Abre el modal de pago en lugar de reservar directamente
+    setPaymentModalOpen(true);
+  };
+
+  const confirmPaymentAndBook = async () => {
     setBooking(true);
     try {
       await api.post('/appointments', {
@@ -79,6 +85,7 @@ export default function BookAppointment() {
         hora_inicio: selectedSlot,
         notas: notas || null,
       });
+      setPaymentModalOpen(false);
       navigate('/booking-success');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error al reservar la cita');
@@ -273,6 +280,9 @@ export default function BookAppointment() {
               />
             </div>
 
+            {/* Código de descuento */}
+            <DiscountCodeInput onApply={setDiscount} appliedDiscount={discount} />
+
             {/* Ticket de Compra Visual */}
             <div className="bg-surface-elevated rounded-2xl p-6 border border-border-strong relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
@@ -293,15 +303,25 @@ export default function BookAppointment() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-border-strong/50">
-                  <span className="text-text-secondary">Costo al finalizar</span>
-                  <span className="font-extrabold text-brand-600 text-lg">{parseFloat(service.precio).toFixed(2)}€</span>
-                </div>
+                    <span className="text-text-secondary">Costo al finalizar</span>
+                    <div className="text-right">
+                      {discount && (
+                        <p className="text-xs line-through text-text-muted">{parseFloat(service.precio).toFixed(2)}€</p>
+                      )}
+                      <span className="font-extrabold text-brand-600 text-lg">
+                        {discount
+                          ? Math.max(0, parseFloat(service.precio) * (1 - discount.percent / 100)).toFixed(2)
+                          : parseFloat(service.precio).toFixed(2)}€
+                        {discount && <span className="text-xs text-success-text ml-1">(-{discount.percent}%)</span>}
+                      </span>
+                    </div>
+                  </div>
               </div>
             </div>
 
             {/* Botón CTA Fuerte */}
             <button 
-              onClick={handleBook} 
+              onClick={() => setPaymentModalOpen(true)} 
               disabled={booking} 
               className={`btn-primary w-full py-4 text-base tracking-wide flex justify-center items-center transition-all ${booking ? 'opacity-80 scale-95' : 'hover:scale-[1.01]'}`}
             >
@@ -311,9 +331,22 @@ export default function BookAppointment() {
                   Procesando reserva...
                 </>
               ) : (
-                'Confirmar Reserva'
+                'Ir a Pagar'
               )}
             </button>
+
+            {/* Modal de Pago */}
+            <PaymentModal
+              isOpen={paymentModalOpen}
+              onClose={() => setPaymentModalOpen(false)}
+              onConfirm={confirmPaymentAndBook}
+              originalTotal={parseFloat(service.precio).toFixed(2)}
+              total={discount
+                ? Math.max(0, parseFloat(service.precio) * (1 - discount.percent / 100)).toFixed(2)
+                : parseFloat(service.precio).toFixed(2)}
+              discount={discount}
+              concept={service.nombre}
+            />
           </section>
 
         </div>

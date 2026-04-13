@@ -1,0 +1,7 @@
+[
+  { "code": "BIENVENIDA10", "percent": 10, "description": "Descuento de bienvenida para nuevos clientes" },
+  { "code": "VERANO20",    "percent": 20, "description": "Oferta especial de verano" },
+  { "code": "VIP30",        "percent": 30, "description": "Descuento exclusivo para clientes VIP" },
+  { "code": "COWORK15",     "percent": 15, "description": "Promoción espacios coworking" },
+  { "code": "TFG100",       "percent": 100, "description": "Código de demostración TFG" }
+]

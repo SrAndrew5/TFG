@@ -20,9 +20,13 @@ import ManageServices from './pages/admin/ManageServices';
 import ManageEmployees from './pages/admin/ManageEmployees';
 import ManageAppointments from './pages/admin/ManageAppointments';
 import ManageUsers from './pages/admin/ManageUsers';
+import Resources from './pages/Resources';
+import BookResource from './pages/BookResource';
+import MyBookings from './pages/MyBookings';
+import ManageResources from './pages/admin/ManageResources';
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -43,7 +47,7 @@ function AppRoutes() {
 
       {/* Protected routes with layout */}
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Navigate to={isAdmin ? '/admin' : '/home'} replace />} />
         <Route path="/home" element={<Home />} />
         <Route path="/map" element={<MapView />} />
         <Route path="/profile" element={<UserProfile />} />
@@ -51,6 +55,9 @@ function AppRoutes() {
         <Route path="/services" element={<Services />} />
         <Route path="/book/:serviceId" element={<BookAppointment />} />
         <Route path="/my-appointments" element={<MyAppointments />} />
+        <Route path="/resources" element={<Resources />} />
+        <Route path="/book-resource/:resourceId" element={<BookResource />} />
+        <Route path="/my-bookings" element={<MyBookings />} />
       </Route>
 
       {/* Admin routes with AdminLayout */}
@@ -60,6 +67,7 @@ function AppRoutes() {
         <Route path="/admin/services" element={<ManageServices />} />
         <Route path="/admin/employees" element={<ManageEmployees />} />
         <Route path="/admin/appointments" element={<ManageAppointments />} />
+        <Route path="/admin/resources" element={<ManageResources />} />
       </Route>
 
       {/* Catch all */}

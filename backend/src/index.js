@@ -17,6 +17,7 @@ const appointmentsRoutes = require('./routes/appointments.routes');
 const resourcesRoutes = require('./routes/resources.routes');
 const resourceBookingsRoutes = require('./routes/resourceBookings.routes');
 const adminRoutes = require('./routes/admin.routes');
+const discountCodesRoutes = require('./routes/discountCodes.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -59,6 +60,7 @@ app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/resource-bookings', resourceBookingsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/discount-codes', discountCodesRoutes);
 
 // 404 handler
 app.use((req, res) => {

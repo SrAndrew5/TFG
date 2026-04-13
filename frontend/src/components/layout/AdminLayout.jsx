@@ -10,15 +10,17 @@ import {
   HiOutlineBars3,
   HiOutlineXMark,
   HiOutlineArrowRightOnRectangle,
-  HiOutlineBriefcase
+  HiOutlineBriefcase,
+  HiOutlineBuildingOffice2,
 } from 'react-icons/hi2';
 
 const ADMIN_LINKS = [
-  { to: '/admin', icon: HiOutlineChartPie, label: 'Dashboard' },
-  { to: '/admin/appointments', icon: HiOutlineCalendar, label: 'Reservas' },
-  { to: '/admin/services', icon: HiOutlineScissors, label: 'Servicios' },
-  { to: '/admin/users', icon: HiOutlineUsers, label: 'Usuarios / Clientes' },
-  { to: '/admin/employees', icon: HiOutlineBriefcase, label: 'Equipo / Especialistas' },
+  { to: '/admin',              icon: HiOutlineChartPie,         label: 'Dashboard' },
+  { to: '/admin/appointments', icon: HiOutlineCalendar,         label: 'Reservas Citas' },
+  { to: '/admin/resources',    icon: HiOutlineBuildingOffice2,  label: 'Espacios Coworking' },
+  { to: '/admin/services',     icon: HiOutlineScissors,         label: 'Servicios' },
+  { to: '/admin/users',        icon: HiOutlineUsers,            label: 'Usuarios / Clientes' },
+  { to: '/admin/employees',    icon: HiOutlineBriefcase,        label: 'Equipo / Especialistas' },
 ];
 
 export default function AdminLayout() {
@@ -125,12 +127,13 @@ export default function AdminLayout() {
           <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
             {ADMIN_LINKS.find(link => isActive(link.to))?.label || 'Panel de Administración'}
           </h2>
-          <button 
-            onClick={() => navigate('/')} 
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-surface-elevated border border-border-base text-text-secondary hover:bg-danger-bg hover:text-danger-text hover:border-danger-border transition-all shadow-sm"
-            title="Salir al Home"
+          <button
+            onClick={() => navigate('/home')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-elevated border border-border-base text-sm font-semibold text-text-secondary hover:bg-surface-300 hover:text-text-primary transition-all shadow-sm group"
+            title="Volver al sitio"
           >
-            <HiOutlineXMark className="w-5 h-5" />
+            <HiOutlineXMark className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+            Salir del panel
           </button>
         </header>
 
