@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import LoginModal from '../shared/LoginModal';
 
 /**
  * Layout Base — Arctic Clarity
@@ -11,14 +12,14 @@ import Footer from './Footer';
  *
  * Las rutas full-width se declaran en FULL_WIDTH_ROUTES.
  */
-const FULL_WIDTH_ROUTES = ['/map'];
+const FULL_WIDTH_ROUTES = ['/map', '/explorar'];
 
 export default function Layout() {
   const location = useLocation();
   const isFullWidth = FULL_WIDTH_ROUTES.some((r) => location.pathname.startsWith(r));
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8F8FF' }}>
+    <div className="min-h-screen flex flex-col bg-surface-base">
 
       {/* ── Navbar sticky ── */}
       <Navbar />
@@ -43,6 +44,9 @@ export default function Layout() {
 
       {/* ── Footer (oculto en /map para maximizar el mapa) ── */}
       {!isFullWidth && <Footer />}
+
+      {/* ── Modales Globales ── */}
+      <LoginModal />
     </div>
   );
 }

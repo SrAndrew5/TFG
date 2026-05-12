@@ -1,99 +1,49 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../api/client';
-import toast from 'react-hot-toast';
-import { HiOutlineClock, HiOutlineBanknotes, HiOutlineUser } from 'react-icons/hi2';
+import { usePageTitle } from '../hooks/usePageTitle';
+import ServiceGrid from '../components/services/ServiceGrid';
+import { HiOutlineScissors, HiOutlineSparkles } from 'react-icons/hi2';
 
 export default function Services() {
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    api.get('/services')
-      .then((res) => setServices(res.data.data))
-      .catch(() => toast.error('Error al cargar servicios'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  usePageTitle('Servicios');
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Servicios</h1>
-        <p className="text-surface-400 mt-1">Elige un servicio y reserva tu cita</p>
-      </div>
+    <div className="animate-fade-in pb-12">
+      {/* ── Hero único de servicios ── */}
+      <div className="services-hero">
+        <div className="relative z-10">
+          <span className="services-hero-eyebrow">
+            <HiOutlineScissors className="w-3.5 h-3.5" />
+            Peluquería Profesional
+          </span>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {services.map((service, i) => (
-          <div
-            key={service.id}
-            className="glass-card p-6 hover:border-primary-500/30 transition-all duration-500 group animate-slide-up"
-            style={{ animationDelay: `${i * 0.1}s` }}
-          >
-            {/* Category badge */}
-            {service.categoria && (
-              <span className="badge bg-primary-500/10 text-primary-400 border border-primary-500/20 mb-4">
-                {service.categoria}
-              </span>
-            )}
+          <h1 className="services-hero-title">
+            Servicios a tu<br />
+            <span style={{
+              background: 'linear-gradient(135deg, #F97316, #C2410C)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>medida.</span>
+          </h1>
 
-            <h3 className="text-lg font-semibold text-surface-100 group-hover:text-primary-300 transition-colors">
-              {service.nombre}
-            </h3>
+          <p className="services-hero-sub">
+            Elige el tratamiento que buscas y reserva con el profesional que prefieras. Confirmación instantánea.
+          </p>
 
-            {service.descripcion && (
-              <p className="text-sm text-surface-400 mt-2 line-clamp-2">{service.descripcion}</p>
-            )}
-
-            <div className="flex items-center gap-4 mt-4 text-sm text-surface-400">
-              <span className="flex items-center gap-1">
-                <HiOutlineClock className="w-4 h-4" />
-                {service.duracion_min} min
-              </span>
-              <span className="flex items-center gap-1">
-                <HiOutlineBanknotes className="w-4 h-4" />
-                {parseFloat(service.precio).toFixed(2)}€
-              </span>
+          <div className="flex flex-wrap items-center gap-4 mt-6">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <HiOutlineSparkles className="w-4 h-4 text-orange-500" />
+              Corte · Color · Tratamiento · Peinado
             </div>
-
-            {/* Employees */}
-            {service.empleados?.length > 0 && (
-              <div className="mt-4 flex items-center gap-2">
-                <HiOutlineUser className="w-4 h-4 text-surface-500" />
-                <div className="flex -space-x-2">
-                  {service.empleados.slice(0, 3).map((emp) => (
-                    <div
-                      key={emp.id}
-                      className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold border-2 border-surface-900"
-                      title={`${emp.nombre} ${emp.apellidos}`}
-                    >
-                      {emp.nombre?.charAt(0)}
-                    </div>
-                  ))}
-                </div>
-                <span className="text-xs text-surface-500">
-                  {service.empleados.length} profesional{service.empleados.length > 1 ? 'es' : ''}
-                </span>
-              </div>
-            )}
-
-            <button
-              onClick={() => navigate(`/book/${service.id}`)}
-              className="btn-primary w-full mt-5 text-sm"
-            >
-              Reservar cita
-            </button>
           </div>
-        ))}
+        </div>
+
+        {/* Decoración icono grande */}
+        <div className="absolute right-10 top-1/2 -translate-y-1/2 opacity-[0.04] pointer-events-none hidden lg:block" aria-hidden="true">
+          <HiOutlineScissors className="w-64 h-64 text-orange-500 rotate-[-20deg]" />
+        </div>
       </div>
+
+      <ServiceGrid />
     </div>
   );
 }

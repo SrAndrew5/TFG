@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import {
   HiOutlinePlus,
   HiOutlinePencilSquare,
@@ -12,6 +13,7 @@ import {
 } from 'react-icons/hi2';
 
 export default function ManageServices() {
+  usePageTitle('Gestión de Servicios');
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,7 +47,6 @@ export default function ManageServices() {
       setServices(res.data.data);
     } catch (err) {
       toast.error('Error al cargar los servicios');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,6 @@ export default function ManageServices() {
       setModalOpen(false);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error al guardar el servicio');
-      console.error(err);
     } finally {
       setSaving(false);
     }
@@ -141,7 +141,7 @@ export default function ManageServices() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-text-primary mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>
+          <h1 className="text-3xl font-extrabold text-text-primary mb-1">
             Catálogo de Servicios
           </h1>
           <p className="text-text-secondary">Gestiona los espacios y ofertas disponibles.</p>
@@ -270,12 +270,12 @@ export default function ManageServices() {
 
             <div className="px-8 py-6 border-b border-border-base bg-surface-subtle/50 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-extrabold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
+                <h2 className="text-2xl font-extrabold text-text-primary">
                   {editingService ? 'Editar Servicio' : 'Nuevo Servicio'}
                 </h2>
                 <p className="text-xs text-text-secondary mt-1">CATÁLOGO DE NEGOCIO</p>
               </div>
-              <button onClick={() => !saving && setModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
+              <button onClick={() => !saving && setModalOpen(false)} aria-label="Cerrar modal" className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
                 <HiOutlineXMark className="w-5 h-5" />
               </button>
             </div>
@@ -407,7 +407,7 @@ export default function ManageServices() {
             <div className="w-20 h-20 bg-danger-bg rounded-full mx-auto flex items-center justify-center mb-6">
               <HiOutlineExclamationTriangle className="w-10 h-10 text-danger-text" />
             </div>
-            <h3 className="text-2xl font-bold text-text-primary mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <h3 className="text-2xl font-bold text-text-primary mb-2">
               Desactivar Servicio
             </h3>
             <p className="text-sm text-text-secondary mb-8">

@@ -26,10 +26,29 @@ async function getAll(req, res, next) {
       orderBy: { nombre: 'asc' },
     });
 
-    // Transformar la respuesta para aplanar la relación N:M
+    // Agregamos rating de Reviews en una sola query con groupBy. Más eficiente que
+    // un findMany por servicio: una llamada para todos los servicios mostrados.
+    const ids = servicios.map((s) => s.id);
+    const ratings = ids.length > 0
+      ? await prisma.review.groupBy({
+          by: ['servicio_id'],
+          where: { servicio_id: { in: ids } },
+          _avg: { rating: true },
+          _count: { rating: true },
+        })
+      : [];
+    const ratingMap = new Map(
+      ratings.map((r) => [r.servicio_id, {
+        avg: r._avg.rating ? Math.round(r._avg.rating * 10) / 10 : null,
+        count: r._count.rating,
+      }]),
+    );
+
     const data = servicios.map((s) => ({
       ...s,
       empleados: s.empleados.map((se) => se.empleado),
+      avg_rating:   ratingMap.get(s.id)?.avg ?? null,
+      review_count: ratingMap.get(s.id)?.count ?? 0,
     }));
 
     res.json({ success: true, data });
@@ -43,8 +62,11 @@ async function getAll(req, res, next) {
  */
 async function getById(req, res, next) {
   try {
+    const id = parseInt(req.params.id);
+    const where = req.user.rol === 'ADMIN' ? { id } : { id, business_id: req.user.business_id };
+
     const servicio = await prisma.servicio.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where,
       include: {
         empleados: {
           include: {
@@ -80,7 +102,14 @@ async function create(req, res, next) {
     const { nombre, descripcion, duracion_min, precio, categoria } = req.body;
 
     const servicio = await prisma.servicio.create({
-      data: { nombre, descripcion, duracion_min, precio, categoria },
+      data: {
+        nombre,
+        descripcion,
+        duracion_min,
+        precio,
+        categoria,
+        business_id: req.user.rol === 'ADMIN' ? (req.body.business_id || null) : req.user.business_id,
+      },
     });
 
     res.status(201).json({
@@ -98,8 +127,11 @@ async function create(req, res, next) {
  */
 async function update(req, res, next) {
   try {
+    const id = parseInt(req.params.id);
+    const where = req.user.rol === 'ADMIN' ? { id } : { id, business_id: req.user.business_id };
+
     const servicio = await prisma.servicio.update({
-      where: { id: parseInt(req.params.id) },
+      where,
       data: req.body,
     });
 
@@ -118,8 +150,11 @@ async function update(req, res, next) {
  */
 async function remove(req, res, next) {
   try {
+    const id = parseInt(req.params.id);
+    const where = req.user.rol === 'ADMIN' ? { id } : { id, business_id: req.user.business_id };
+
     await prisma.servicio.update({
-      where: { id: parseInt(req.params.id) },
+      where,
       data: { activo: false },
     });
 

@@ -5,26 +5,14 @@ import {
   HiOutlineCreditCard,
   HiOutlineShieldCheck,
   HiMiniArrowPath,
+  HiOutlineCheckCircle,
 } from 'react-icons/hi2';
+import { usePaymentMethods } from '../../hooks/usePaymentMethods';
+import { useScrollLock } from '../../hooks/useScrollLock';
+import { CARD_COLORS, formatCardNumber, formatExpiry, detectBrand } from '../../utils/cardHelpers';
 
-/* ─── Helpers de formato ─────────────────────────────── */
-
-function formatCardNumber(raw) {
-  return raw.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
-}
-
-function formatExpiry(raw) {
-  const digits = raw.replace(/\D/g, '').slice(0, 4);
-  if (digits.length >= 3) return digits.slice(0, 2) + '/' + digits.slice(2);
-  return digits;
-}
-
-function detectBrand(number) {
-  const n = number.replace(/\s/g, '');
-  if (/^4/.test(n)) return 'VISA';
-  if (/^5[1-5]/.test(n)) return 'MC';
-  if (/^3[47]/.test(n)) return 'AMEX';
-  return null;
+function getSwatchColor(colorId) {
+  return (CARD_COLORS.find((c) => c.id === colorId) || CARD_COLORS[0]).swatch;
 }
 
 /* ─── Validaciones ───────────────────────────────────── */
@@ -114,6 +102,10 @@ function CardPreview({ number, holder, expiry, brand, flipped }) {
  *   concept       — string: nombre del servicio o recurso
  */
 export default function PaymentModal({ isOpen, onClose, onConfirm, total, originalTotal, discount, concept }) {
+  const { methods } = usePaymentMethods();
+  useScrollLock(isOpen);
+
+  const [selectedCard, setSelectedCard] = useState(null); // tarjeta guardada seleccionada
   const [form, setForm] = useState({ holderName: '', cardNumber: '', expiry: '', cvv: '' });
   const [errors, setErrors] = useState({});
   const [cvvFocus, setCvvFocus] = useState(false);
@@ -121,34 +113,63 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, total, origin
 
   if (!isOpen) return null;
 
-  // El total ya llega con el descuento aplicado desde la página padre
-  const finalTotal = parseFloat(total) || 0;
-  // originalTotal sólo se usa para mostrar el desglose (precio antes del descuento)
-  const baseTotal = parseFloat(originalTotal || total) || 0;
+  const finalTotal   = parseFloat(total) || 0;
+  const baseTotal    = parseFloat(originalTotal || total) || 0;
   const discountAmount = discount ? (baseTotal - finalTotal) : 0;
+
+  // Cuando el usuario elige una tarjeta guardada, sólo pre-rellena campos no sensibles
+  const pickSavedCard = (card) => {
+    setSelectedCard(card);
+    setForm({ holderName: card.titular, cardNumber: '', expiry: card.expiry, cvv: '' });
+    setErrors({});
+  };
+
+  const deselectCard = () => {
+    setSelectedCard(null);
+    setForm({ holderName: '', cardNumber: '', expiry: '', cvv: '' });
+    setErrors({});
+  };
 
   const field = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errs = validateCard(form);
+    let errs;
+    if (isLocked) {
+      // Saved card: only CVV needs validation
+      const cvvLen = selectedCard.brand === 'AMEX' ? 4 : 3;
+      errs = form.cvv.length !== cvvLen ? { cvv: `El CVV debe tener ${cvvLen} dígitos` } : {};
+    } else {
+      errs = validateCard(form);
+    }
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
     setPaying(true);
-    // Simulamos el procesamiento (500ms) antes de confirmar
-    await new Promise((r) => setTimeout(r, 900));
-    setPaying(false);
-    await onConfirm();
+    try {
+      await new Promise((r) => setTimeout(r, 900)); // simulación procesamiento
+      await onConfirm();
+    } catch {
+      // onConfirm ya muestra su propio toast de error
+    } finally {
+      setPaying(false);
+    }
   };
 
   const brand = detectBrand(form.cardNumber);
+  const isLocked = !!selectedCard; // campos bloqueados si usas tarjeta guardada
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="bg-white rounded-[2rem] shadow-[0_24px_60px_rgba(31,41,55,0.25)] max-w-md w-full relative z-10 animate-scale-in flex flex-col overflow-hidden border border-border-base">
+
+        {/* Banner Demo */}
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2">
+          <span className="bg-amber-400 text-amber-900 text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full">Demo</span>
+          <p className="text-xs text-amber-800 font-medium">Pago simulado — No se realizará ningún cargo real</p>
+        </div>
 
         {/* Header */}
         <div className="px-7 py-5 border-b border-border-base bg-surface-subtle/50 flex justify-between items-center">
@@ -157,34 +178,85 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, total, origin
               <HiOutlineLockClosed className="w-4.5 h-4.5 text-brand-600" />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-text-primary leading-tight" style={{ fontFamily: 'Sora, sans-serif' }}>Pago Seguro</h2>
+              <h2 className="text-lg font-extrabold text-text-primary leading-tight">Pago Seguro</h2>
               <p className="text-xs text-text-muted font-medium">Cifrado SSL 256-bit</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-text-secondary hover:bg-surface-300 transition-colors">
+          <button onClick={onClose} aria-label="Cerrar modal de pago" className="w-8 h-8 flex items-center justify-center rounded-xl text-text-secondary hover:bg-surface-300 transition-colors">
             <HiOutlineXMark className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-7 space-y-6 overflow-y-auto max-h-[80vh]">
+        <form onSubmit={handleSubmit} className="p-7 space-y-5 overflow-y-auto max-h-[80vh]">
 
-          {/* Previsualización de la tarjeta */}
-          <div style={{ perspective: '1000px' }}>
-            <style>{`
-              .rotate-y-180 { transform: rotateY(180deg); }
-              .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-              .transform-style-preserve-3d { transform-style: preserve-3d; }
-            `}</style>
-            <CardPreview
-              number={form.cardNumber}
-              holder={form.holderName}
-              expiry={form.expiry}
-              brand={brand}
-              flipped={cvvFocus}
-            />
-          </div>
+          {/* ── Tarjetas guardadas ── */}
+          {methods.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-text-muted">Tarjetas guardadas</p>
+              {methods.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => selectedCard?.id === m.id ? deselectCard() : pickSavedCard(m)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                    selectedCard?.id === m.id
+                      ? 'border-brand-500 bg-brand-50'
+                      : 'border-border-base hover:border-brand-300 hover:bg-surface-elevated'
+                  }`}
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-xs font-extrabold"
+                    style={{ backgroundColor: getSwatchColor(m.colorId) }}
+                  >
+                    {m.brand === 'MC' ? (
+                      <div className="flex -space-x-1.5">
+                        <div className="w-3.5 h-3.5 rounded-full bg-red-400/90" />
+                        <div className="w-3.5 h-3.5 rounded-full bg-amber-300/90" />
+                      </div>
+                    ) : (
+                      <span className={m.brand === 'VISA' ? 'italic' : ''} style={m.brand === 'VISA' ? { fontFamily: 'Georgia, serif' } : {}}>
+                        {m.brand || '💳'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-text-primary">•••• •••• •••• {m.last4}</p>
+                    <p className="text-xs text-text-muted truncate">{m.titular} · Caduca {m.expiry}</p>
+                  </div>
+                  {selectedCard?.id === m.id && (
+                    <HiOutlineCheckCircle className="w-5 h-5 text-brand-500 flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="flex-1 h-px bg-border-base" />
+                <span className="text-xs text-text-muted font-medium">
+                  {selectedCard ? 'o usa otra tarjeta' : 'o introduce una nueva'}
+                </span>
+                <div className="flex-1 h-px bg-border-base" />
+              </div>
+            </div>
+          )}
 
-          {/* Resumen del cobro */}
+          {/* ── Previsualización de la tarjeta ── */}
+          {!selectedCard && (
+            <div style={{ perspective: '1000px' }}>
+              <style>{`
+                .rotate-y-180 { transform: rotateY(180deg); }
+                .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+                .transform-style-preserve-3d { transform-style: preserve-3d; }
+              `}</style>
+              <CardPreview
+                number={form.cardNumber}
+                holder={form.holderName}
+                expiry={form.expiry}
+                brand={brand}
+                flipped={cvvFocus}
+              />
+            </div>
+          )}
+
+          {/* ── Resumen del cobro ── */}
           <div className="bg-surface-elevated rounded-2xl p-4 border border-border-base text-sm space-y-2">
             <div className="flex justify-between text-text-secondary">
               <span>{concept}</span>
@@ -202,7 +274,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, total, origin
             </div>
           </div>
 
-          {/* Formulario */}
+          {/* ── Formulario ── */}
           <div className="space-y-4">
 
             {/* Titular */}
@@ -210,9 +282,10 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, total, origin
               <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1.5">Titular de la tarjeta</label>
               <input
                 value={form.holderName}
-                onChange={(e) => field('holderName', e.target.value.toUpperCase())}
+                onChange={(e) => !isLocked && field('holderName', e.target.value.toUpperCase())}
+                readOnly={isLocked}
                 placeholder="NOMBRE APELLIDOS"
-                className={`input-field py-3 font-semibold tracking-wide ${errors.holderName ? 'border-danger-border' : ''}`}
+                className={`input-field py-3 font-semibold tracking-wide ${isLocked ? 'bg-surface-elevated text-text-secondary cursor-not-allowed' : ''} ${errors.holderName ? 'border-danger-border' : ''}`}
               />
               {errors.holderName && <p className="text-xs text-danger-text mt-1">{errors.holderName}</p>}
             </div>
@@ -223,48 +296,60 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, total, origin
               <div className="relative">
                 <HiOutlineCreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
                 <input
-                  value={form.cardNumber}
-                  onChange={(e) => field('cardNumber', formatCardNumber(e.target.value))}
+                  value={isLocked ? `•••• •••• •••• ${selectedCard.last4}` : form.cardNumber}
+                  onChange={(e) => !isLocked && field('cardNumber', formatCardNumber(e.target.value))}
+                  readOnly={isLocked}
                   placeholder="1234 5678 9012 3456"
                   maxLength={19}
-                  className={`input-field pl-11 py-3 font-mono text-base tracking-widest ${errors.cardNumber ? 'border-danger-border' : ''}`}
+                  className={`input-field pl-11 py-3 font-mono text-base tracking-widest ${isLocked ? 'bg-surface-elevated text-text-secondary cursor-not-allowed' : ''} ${errors.cardNumber ? 'border-danger-border' : ''}`}
                 />
-                {brand && (
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-extrabold text-brand-600 tracking-widest">{brand}</span>
+                {(brand || selectedCard?.brand) && (
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-extrabold text-brand-600 tracking-widest">
+                    {selectedCard?.brand || brand}
+                  </span>
                 )}
               </div>
               {errors.cardNumber && <p className="text-xs text-danger-text mt-1">{errors.cardNumber}</p>}
             </div>
 
-            {/* Fecha + CVV */}
+            {/* Caducidad + CVV */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1.5">Caducidad</label>
                 <input
                   value={form.expiry}
-                  onChange={(e) => field('expiry', formatExpiry(e.target.value))}
+                  onChange={(e) => !isLocked && field('expiry', formatExpiry(e.target.value))}
+                  readOnly={isLocked}
                   placeholder="MM/AA"
                   maxLength={5}
-                  className={`input-field py-3 font-mono text-center tracking-widest ${errors.expiry ? 'border-danger-border' : ''}`}
+                  className={`input-field py-3 font-mono text-center tracking-widest ${isLocked ? 'bg-surface-elevated text-text-secondary cursor-not-allowed' : ''} ${errors.expiry ? 'border-danger-border' : ''}`}
                 />
                 {errors.expiry && <p className="text-xs text-danger-text mt-1">{errors.expiry}</p>}
               </div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-1.5">
-                  CVV {brand === 'AMEX' ? '(4 dígitos)' : '(3 dígitos)'}
+                  CVV {(brand === 'AMEX' || selectedCard?.brand === 'AMEX') ? '(4 dígitos)' : '(3 dígitos)'}
                 </label>
                 <input
                   value={form.cvv}
-                  onChange={(e) => field('cvv', e.target.value.replace(/\D/g, '').slice(0, brand === 'AMEX' ? 4 : 3))}
+                  onChange={(e) => field('cvv', e.target.value.replace(/\D/g, '').slice(0, (brand === 'AMEX' || selectedCard?.brand === 'AMEX') ? 4 : 3))}
                   onFocus={() => setCvvFocus(true)}
                   onBlur={() => setCvvFocus(false)}
                   placeholder="•••"
                   maxLength={4}
+                  autoFocus={!!selectedCard}
                   className={`input-field py-3 font-mono text-center tracking-widest ${errors.cvv ? 'border-danger-border' : ''}`}
                 />
                 {errors.cvv && <p className="text-xs text-danger-text mt-1">{errors.cvv}</p>}
+                {isLocked && <p className="text-[11px] text-text-muted mt-1">Introduce el CVV de tu tarjeta guardada</p>}
               </div>
             </div>
+
+            {isLocked && (
+              <button type="button" onClick={deselectCard} className="text-xs text-brand-600 hover:text-brand-700 font-semibold transition-colors">
+                ← Usar una tarjeta diferente
+              </button>
+            )}
           </div>
 
           {/* CTA */}

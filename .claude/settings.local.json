@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(echo \"Frontend PID: $!\")",
+      "Read(//tmp/**)",
+      "Bash(git -C /c/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG log --oneline -5)",
+      "Bash(git -C /c/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG ls-files backend/.env)",
+      "Bash(npm uninstall *)",
+      "Bash(npx prisma *)",
+      "Bash(npm test *)",
+      "Bash(taskkill /F /FI \"WINDOWTITLE eq *node*\" /T)",
+      "Bash(taskkill /F /IM node.exe /T)",
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force)",
+      "PowerShell(npx prisma generate 2>&1)",
+      "Bash(LOG_LEVEL=info npx jest src/__tests__/reviewRequest.test.js)"
+    ]
+  }
+}

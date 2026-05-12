@@ -14,7 +14,7 @@ async function main() {
 
   const admin = await prisma.usuario.upsert({
     where: { email: 'admin@reservas.local' },
-    update: {},
+    update: { email_verificado: true, activo: true },
     create: {
       nombre: 'Admin',
       apellidos: 'Sistema',
@@ -23,12 +23,13 @@ async function main() {
       telefono: '+34600000001',
       rol: 'ADMIN',
       activo: true,
+      email_verificado: true,
     },
   });
 
   const cliente = await prisma.usuario.upsert({
     where: { email: 'cliente@reservas.local' },
-    update: {},
+    update: { email_verificado: true, activo: true },
     create: {
       nombre: 'María',
       apellidos: 'García López',
@@ -37,12 +38,13 @@ async function main() {
       telefono: '+34600000002',
       rol: 'CLIENTE',
       activo: true,
+      email_verificado: true,
     },
   });
 
   const cliente2 = await prisma.usuario.upsert({
     where: { email: 'carlos@reservas.local' },
-    update: {},
+    update: { email_verificado: true, activo: true },
     create: {
       nombre: 'Carlos',
       apellidos: 'Martínez Ruiz',
@@ -51,203 +53,11 @@ async function main() {
       telefono: '+34600000003',
       rol: 'CLIENTE',
       activo: true,
+      email_verificado: true,
     },
   });
 
   console.log('✅ Usuarios creados');
-
-  // =============================================
-  // EMPLEADOS (Peluquería)
-  // =============================================
-  const empleados = await Promise.all([
-    prisma.empleado.upsert({
-      where: { email: 'ana.peluquera@reservas.local' },
-      update: {},
-      create: {
-        nombre: 'Ana',
-        apellidos: 'Rodríguez Sánchez',
-        email: 'ana.peluquera@reservas.local',
-        telefono: '+34600100001',
-        especialidad: 'Coloración y Mechas',
-        activo: true,
-      },
-    }),
-    prisma.empleado.upsert({
-      where: { email: 'pedro.barbero@reservas.local' },
-      update: {},
-      create: {
-        nombre: 'Pedro',
-        apellidos: 'Fernández Díaz',
-        email: 'pedro.barbero@reservas.local',
-        telefono: '+34600100002',
-        especialidad: 'Barbería y Corte Masculino',
-        activo: true,
-      },
-    }),
-    prisma.empleado.upsert({
-      where: { email: 'laura.estilista@reservas.local' },
-      update: {},
-      create: {
-        nombre: 'Laura',
-        apellidos: 'Moreno Jiménez',
-        email: 'laura.estilista@reservas.local',
-        telefono: '+34600100003',
-        especialidad: 'Peinados y Tratamientos',
-        activo: true,
-      },
-    }),
-  ]);
-
-  console.log('✅ Empleados creados');
-
-  // =============================================
-  // SERVICIOS (Peluquería)
-  // =============================================
-  const servicios = await Promise.all([
-    prisma.servicio.create({
-      data: {
-        nombre: 'Corte de pelo',
-        descripcion: 'Corte personalizado según tendencias actuales',
-        duracion_min: 30,
-        precio: 15.00,
-        categoria: 'Corte',
-        activo: true,
-      },
-    }),
-    prisma.servicio.create({
-      data: {
-        nombre: 'Coloración completa',
-        descripcion: 'Tinte completo con productos profesionales',
-        duracion_min: 90,
-        precio: 45.00,
-        categoria: 'Color',
-        activo: true,
-      },
-    }),
-    prisma.servicio.create({
-      data: {
-        nombre: 'Mechas / Balayage',
-        descripcion: 'Mechas naturales con técnica balayage',
-        duracion_min: 120,
-        precio: 65.00,
-        categoria: 'Color',
-        activo: true,
-      },
-    }),
-    prisma.servicio.create({
-      data: {
-        nombre: 'Barba completa',
-        descripcion: 'Recorte y perfilado de barba con navaja',
-        duracion_min: 20,
-        precio: 10.00,
-        categoria: 'Barbería',
-        activo: true,
-      },
-    }),
-    prisma.servicio.create({
-      data: {
-        nombre: 'Lavado + Peinado',
-        descripcion: 'Lavado con masaje capilar y peinado profesional',
-        duracion_min: 45,
-        precio: 20.00,
-        categoria: 'Peinado',
-        activo: true,
-      },
-    }),
-    prisma.servicio.create({
-      data: {
-        nombre: 'Tratamiento Keratina',
-        descripcion: 'Alisado con keratina para cabello liso y brillante',
-        duracion_min: 150,
-        precio: 80.00,
-        categoria: 'Tratamiento',
-        activo: true,
-      },
-    }),
-  ]);
-
-  console.log('✅ Servicios creados');
-
-  // =============================================
-  // SERVICIOS ↔ EMPLEADOS (relación N:M)
-  // =============================================
-  const asignaciones = [
-    // Ana: Coloración, Mechas, Lavado+Peinado, Tratamiento
-    { servicio_id: servicios[1].id, empleado_id: empleados[0].id },
-    { servicio_id: servicios[2].id, empleado_id: empleados[0].id },
-    { servicio_id: servicios[4].id, empleado_id: empleados[0].id },
-    { servicio_id: servicios[5].id, empleado_id: empleados[0].id },
-    // Pedro: Corte, Barba
-    { servicio_id: servicios[0].id, empleado_id: empleados[1].id },
-    { servicio_id: servicios[3].id, empleado_id: empleados[1].id },
-    // Laura: Corte, Lavado+Peinado, Tratamiento
-    { servicio_id: servicios[0].id, empleado_id: empleados[2].id },
-    { servicio_id: servicios[4].id, empleado_id: empleados[2].id },
-    { servicio_id: servicios[5].id, empleado_id: empleados[2].id },
-  ];
-
-  for (const asig of asignaciones) {
-    await prisma.servicioEmpleado.create({ data: asig });
-  }
-
-  console.log('✅ Asignaciones servicio-empleado creadas');
-
-  // =============================================
-  // DISPONIBILIDAD (Horarios semanales)
-  // =============================================
-  // Lunes a Viernes, 09:00-14:00 y 16:00-20:00
-  for (const empleado of empleados) {
-    for (let dia = 0; dia <= 4; dia++) {
-      await prisma.disponibilidad.createMany({
-        data: [
-          { empleado_id: empleado.id, dia_semana: dia, hora_inicio: '09:00', hora_fin: '14:00' },
-          { empleado_id: empleado.id, dia_semana: dia, hora_inicio: '16:00', hora_fin: '20:00' },
-        ],
-      });
-    }
-    // Sábado mañana
-    await prisma.disponibilidad.create({
-      data: { empleado_id: empleado.id, dia_semana: 5, hora_inicio: '09:00', hora_fin: '14:00' },
-    });
-  }
-
-  console.log('✅ Disponibilidades creadas');
-
-  // =============================================
-  // CITAS DE EJEMPLO
-  // =============================================
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  // Ensure it's a weekday
-  while (tomorrow.getDay() === 0 || tomorrow.getDay() === 6) {
-    tomorrow.setDate(tomorrow.getDate() + 1);
-  }
-
-  await prisma.cita.createMany({
-    data: [
-      {
-        usuario_id: cliente.id,
-        empleado_id: empleados[1].id,
-        servicio_id: servicios[0].id,
-        fecha: tomorrow,
-        hora_inicio: '10:00',
-        hora_fin: '10:30',
-        estado: 'CONFIRMADA',
-        notas: 'Corte degradado por los lados',
-      },
-      {
-        usuario_id: cliente2.id,
-        empleado_id: empleados[0].id,
-        servicio_id: servicios[1].id,
-        fecha: tomorrow,
-        hora_inicio: '11:00',
-        hora_fin: '12:30',
-        estado: 'PENDIENTE',
-      },
-    ],
-  });
-
-  console.log('✅ Citas de ejemplo creadas');
 
   // =============================================
   // RECURSOS (Coworking)
@@ -269,7 +79,7 @@ async function main() {
       data: {
         nombre: 'Mesa Hot Desk A2',
         tipo: 'MESA',
-        descripcion: 'Mesa individual junto a ventana',
+        descripcion: 'Mesa individual junto a ventana con vistas a la calle',
         capacidad: 1,
         ubicacion: 'Planta 1, Zona A',
         precio_hora: 5.00,
@@ -293,7 +103,7 @@ async function main() {
       data: {
         nombre: 'Sala Reuniones "Focus"',
         tipo: 'SALA',
-        descripcion: 'Sala pequeña para reuniones privadas o llamadas',
+        descripcion: 'Sala pequeña para reuniones privadas o llamadas de trabajo',
         capacidad: 4,
         ubicacion: 'Planta 2, Sala 202',
         precio_hora: 12.00,
@@ -317,7 +127,7 @@ async function main() {
       data: {
         nombre: 'Puesto Dedicado B1',
         tipo: 'PUESTO',
-        descripcion: 'Puesto fijo con almacenamiento personal',
+        descripcion: 'Puesto fijo con almacenamiento personal bajo llave',
         capacidad: 1,
         ubicacion: 'Planta 1, Zona B',
         precio_hora: 8.00,
@@ -330,8 +140,13 @@ async function main() {
   console.log('✅ Recursos coworking creados');
 
   // =============================================
-  // RESERVAS DE RECURSOS DE EJEMPLO
+  // RESERVAS DE EJEMPLO
   // =============================================
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  while (tomorrow.getDay() === 0 || tomorrow.getDay() === 6) {
+    tomorrow.setDate(tomorrow.getDate() + 1);
+  }
   const dayAfterTomorrow = new Date(tomorrow);
   dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
   while (dayAfterTomorrow.getDay() === 0 || dayAfterTomorrow.getDay() === 6) {
@@ -361,7 +176,217 @@ async function main() {
     ],
   });
 
-  console.log('✅ Reservas de recursos de ejemplo creadas');
+  console.log('✅ Reservas de ejemplo creadas');
+
+  // =============================================
+  // CÓDIGOS DE DESCUENTO
+  // =============================================
+  const codigosDescuento = [
+    { codigo: 'BIENVENIDA10', porcentaje: 10, descripcion: 'Descuento de bienvenida para nuevos usuarios' },
+    { codigo: 'VERANO20',     porcentaje: 20, descripcion: 'Oferta especial de verano' },
+    { codigo: 'VIP30',        porcentaje: 30, descripcion: 'Descuento exclusivo para usuarios VIP', max_usos: 50 },
+    { codigo: 'COWORK15',     porcentaje: 15, descripcion: 'Promoción espacios coworking' },
+    { codigo: 'TFG100',       porcentaje: 100, descripcion: 'Código de demostración TFG (limitado)', max_usos: 5 },
+  ];
+
+  for (const cd of codigosDescuento) {
+    await prisma.codigoDescuento.upsert({
+      where: { codigo: cd.codigo },
+      update: {},
+      create: cd,
+    });
+  }
+
+  console.log('✅ Códigos de descuento creados');
+
+  // =============================================
+  // NEGOCIOS DEMO (módulo SaaS)
+  // Espacios de coworking registrados en la plataforma
+  // =============================================
+  function slugify(text) {
+    return String(text || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+
+  const businessOwnerPassword = await bcrypt.hash('password123', 12);
+
+  const businesses = [
+    {
+      ownerData: {
+        nombre: 'Laura', apellidos: 'Ruiz', email: 'info@coworkhub.com',
+        telefono: '+34611111003',
+      },
+      data: {
+        nombre: 'CoWork Hub Sevilla',
+        tipo: 'COWORKING',
+        cif_nif: 'B11223344',
+        descripcion: 'Espacio de coworking moderno en el centro de Sevilla. Mesas flex, despachos privados y salas de reuniones equipadas.',
+        direccion: 'Av. de la Constitución 24',
+        ciudad: 'Sevilla',
+        codigo_postal: '41004',
+        lat: 37.3886,
+        lng: -5.9953,
+        telefono: '+34954123456',
+        web: 'https://coworkhub-sevilla.es',
+        logo_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=200&h=200&fit=crop',
+        fotos_urls: [
+          'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop',
+        ],
+        estado: 'PENDIENTE',
+        horario: {
+          lunes:     { abre: '08:00', cierra: '21:00', cerrado: false },
+          martes:    { abre: '08:00', cierra: '21:00', cerrado: false },
+          miercoles: { abre: '08:00', cierra: '21:00', cerrado: false },
+          jueves:    { abre: '08:00', cierra: '21:00', cerrado: false },
+          viernes:   { abre: '08:00', cierra: '21:00', cerrado: false },
+          sabado:    { abre: '10:00', cierra: '14:00', cerrado: false },
+          domingo:   { cerrado: true },
+        },
+      },
+    },
+    {
+      ownerData: {
+        nombre: 'Marcos', apellidos: 'Vidal', email: 'info@spacemad.com',
+        telefono: '+34611111006',
+      },
+      data: {
+        nombre: 'Space Madrid Centro',
+        tipo: 'COWORKING',
+        cif_nif: 'B22334455',
+        descripcion: 'Coworking premium en el corazón de Madrid. Zonas de trabajo abiertas, cabinas de concentración, salas de reuniones y una terraza exclusiva.',
+        direccion: 'Calle Fuencarral 42',
+        ciudad: 'Madrid',
+        codigo_postal: '28004',
+        lat: 40.4238,
+        lng: -3.7008,
+        telefono: '+34912345678',
+        web: 'https://spacemad.es',
+        logo_url: 'https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=200&h=200&fit=crop',
+        fotos_urls: [
+          'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&h=600&fit=crop',
+        ],
+        estado: 'ACTIVO',
+        horario: {
+          lunes:     { abre: '07:00', cierra: '22:00', cerrado: false },
+          martes:    { abre: '07:00', cierra: '22:00', cerrado: false },
+          miercoles: { abre: '07:00', cierra: '22:00', cerrado: false },
+          jueves:    { abre: '07:00', cierra: '22:00', cerrado: false },
+          viernes:   { abre: '07:00', cierra: '22:00', cerrado: false },
+          sabado:    { abre: '09:00', cierra: '18:00', cerrado: false },
+          domingo:   { cerrado: true },
+        },
+      },
+    },
+    {
+      ownerData: {
+        nombre: 'Nuria', apellidos: 'Pont', email: 'info@nexthub.com',
+        telefono: '+34611111007',
+      },
+      data: {
+        nombre: 'NextHub Barcelona',
+        tipo: 'COWORKING',
+        cif_nif: 'B33445566',
+        descripcion: 'Espacio de innovación y coworking en el Eixample de Barcelona. Diseño minimalista, luz natural y comunidad activa de startups y freelancers.',
+        direccion: 'Carrer de Provença 222',
+        ciudad: 'Barcelona',
+        codigo_postal: '08008',
+        lat: 41.3927,
+        lng: 2.1580,
+        telefono: '+34931234567',
+        web: 'https://nexthub-bcn.es',
+        logo_url: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?w=200&h=200&fit=crop',
+        fotos_urls: [
+          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1600508774634-4e11d34730e2?w=800&h=600&fit=crop',
+        ],
+        estado: 'ACTIVO',
+        horario: {
+          lunes:     { abre: '08:30', cierra: '20:30', cerrado: false },
+          martes:    { abre: '08:30', cierra: '20:30', cerrado: false },
+          miercoles: { abre: '08:30', cierra: '20:30', cerrado: false },
+          jueves:    { abre: '08:30', cierra: '20:30', cerrado: false },
+          viernes:   { abre: '08:30', cierra: '20:30', cerrado: false },
+          sabado:    { abre: '09:00', cierra: '14:00', cerrado: false },
+          domingo:   { cerrado: true },
+        },
+      },
+    },
+    {
+      ownerData: {
+        nombre: 'Diego', apellidos: 'Alonso', email: 'info@werkhaus.com',
+        telefono: '+34611111008',
+      },
+      data: {
+        nombre: 'WerkHaus Valencia',
+        tipo: 'COWORKING',
+        cif_nif: 'B44556677',
+        descripcion: 'Coworking de diseño industrial en Valencia. Altos techos, zonas de relax, cocina compartida y networking weekly cada viernes.',
+        direccion: 'Calle de la Paz 8',
+        ciudad: 'Valencia',
+        codigo_postal: '46003',
+        lat: 39.4712,
+        lng: -0.3740,
+        telefono: '+34961234567',
+        web: 'https://werkhaus.es',
+        logo_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=200&h=200&fit=crop',
+        fotos_urls: [
+          'https://images.unsplash.com/photo-1574717024453-354056adb-a46e?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1542621334-a254cf47733d?w=800&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?w=800&h=600&fit=crop',
+        ],
+        estado: 'ACTIVO',
+        horario: {
+          lunes:     { abre: '08:00', cierra: '20:00', cerrado: false },
+          martes:    { abre: '08:00', cierra: '20:00', cerrado: false },
+          miercoles: { abre: '08:00', cierra: '20:00', cerrado: false },
+          jueves:    { abre: '08:00', cierra: '20:00', cerrado: false },
+          viernes:   { abre: '08:00', cierra: '20:00', cerrado: false },
+          sabado:    { cerrado: true },
+          domingo:   { cerrado: true },
+        },
+      },
+    },
+  ];
+
+  for (const b of businesses) {
+    const owner = await prisma.usuario.upsert({
+      where: { email: b.ownerData.email },
+      update: { rol: 'BUSINESS_OWNER', email_verificado: true, activo: true },
+      create: {
+        ...b.ownerData,
+        password: businessOwnerPassword,
+        rol: 'BUSINESS_OWNER',
+        email_verificado: true,
+        activo: true,
+      },
+    });
+
+    await prisma.business.upsert({
+      where: { cif_nif: b.data.cif_nif },
+      update: {
+        logo_url:   b.data.logo_url,
+        fotos_urls: b.data.fotos_urls,
+      },
+      create: {
+        ...b.data,
+        slug: slugify(b.data.nombre),
+        owner_id: owner.id,
+      },
+    });
+  }
+
+  console.log('✅ Negocios demo creados (3 ACTIVOS, 1 PENDIENTE)');
+
   console.log('');
   console.log('🎉 Seed completado exitosamente!');
   console.log('');
@@ -369,6 +394,12 @@ async function main() {
   console.log('   Admin:   admin@reservas.local / Admin123!');
   console.log('   Cliente: cliente@reservas.local / Cliente123!');
   console.log('   Cliente: carlos@reservas.local / Cliente123!');
+  console.log('');
+  console.log('🏢 Cuentas BUSINESS_OWNER demo (password: password123):');
+  console.log('   info@coworkhub.com  → CoWork Hub Sevilla (PENDIENTE — aprobar en panel admin)');
+  console.log('   info@spacemad.com   → Space Madrid Centro (ACTIVO)');
+  console.log('   info@nexthub.com    → NextHub Barcelona (ACTIVO)');
+  console.log('   info@werkhaus.com   → WerkHaus Valencia (ACTIVO)');
 }
 
 main()

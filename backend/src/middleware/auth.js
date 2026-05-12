@@ -8,16 +8,18 @@ const prisma = require('../config/database');
  */
 async function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
+    // Cookie httpOnly tiene prioridad; Authorization header como fallback (Swagger/tests)
+    const token = req.cookies?.token
+      || (req.headers.authorization?.startsWith('Bearer ')
+          ? req.headers.authorization.split(' ')[1]
+          : null);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'Token de acceso no proporcionado',
       });
     }
-
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, authConfig.secret);
 
     const usuario = await prisma.usuario.findUnique({
@@ -29,6 +31,7 @@ async function authenticate(req, res, next) {
         email: true,
         rol: true,
         activo: true,
+        motivo_suspension: true,
       },
     });
 
@@ -42,7 +45,9 @@ async function authenticate(req, res, next) {
     if (!usuario.activo) {
       return res.status(403).json({
         success: false,
-        message: 'Cuenta desactivada',
+        code: 'ACCOUNT_SUSPENDED',
+        message: 'Cuenta suspendida',
+        motivo: usuario.motivo_suspension || null,
       });
     }
 
@@ -65,4 +70,31 @@ async function authenticate(req, res, next) {
   }
 }
 
-module.exports = { authenticate };
+async function optionalAuthenticate(req, res, next) {
+  try {
+    const token = req.cookies?.token
+      || (req.headers.authorization?.startsWith('Bearer ')
+          ? req.headers.authorization.split(' ')[1]
+          : null);
+
+    if (!token) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, authConfig.secret);
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, nombre: true, apellidos: true, email: true, rol: true, activo: true },
+    });
+
+    if (usuario && usuario.activo) {
+      req.user = usuario;
+    }
+    next();
+  } catch (error) {
+    // Si el token es inválido o expiró, simplemente ignoramos al usuario (es un guest)
+    next();
+  }
+}
+
+module.exports = { authenticate, optionalAuthenticate };

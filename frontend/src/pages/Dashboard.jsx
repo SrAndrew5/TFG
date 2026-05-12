@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { HiOutlineCalendar, HiOutlineUsers, HiOutlineScissors, HiOutlineBuildingOffice2, HiOutlineClock, HiOutlineBanknotes } from 'react-icons/hi2';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function Dashboard() {
+  usePageTitle('Inicio');
   const { user, isAdmin } = useAuth();
   const [stats, setStats] = useState(null);
   const [appointments, setAppointments] = useState([]);
@@ -24,8 +26,7 @@ export default function Dashboard() {
         const statsRes = await api.get('/admin/stats');
         setStats(statsRes.data.data);
       }
-    } catch (err) {
-      console.error('Error loading dashboard:', err);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -56,58 +57,58 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6 lg:p-12 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-surface-100">
+        <h1 className="text-4xl font-black text-brand-500 tracking-tighter">
           Hola, {user?.nombre} 👋
         </h1>
-        <p className="text-surface-400 mt-1">
-          {isAdmin ? 'Panel de administración' : 'Bienvenido/a a tu panel de reservas'}
+        <p className="text-text-secondary font-medium mt-2">
+          {isAdmin ? 'Panel de administración estratégica' : 'Bienvenido/a a tu panel de gestión personal'}
         </p>
       </div>
 
       {/* Stats cards (Admin) */}
       {isAdmin && stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div className="p-2 rounded-lg bg-primary-500/10">
-                <HiOutlineUsers className="w-6 h-6 text-primary-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="card p-6 shadow-subtle hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-brand-50">
+                <HiOutlineUsers className="w-6 h-6 text-brand-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-surface-100">{stats.resumen.total_usuarios}</p>
-            <p className="text-sm text-surface-400">Usuarios</p>
+            <p className="text-3xl font-black text-text-primary tracking-tighter">{stats.resumen.total_usuarios}</p>
+            <p className="text-xs font-black uppercase tracking-widest text-text-muted mt-1">Usuarios</p>
           </div>
 
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div className="p-2 rounded-lg bg-success/10">
-                <HiOutlineScissors className="w-6 h-6 text-success" />
+          <div className="card p-6 shadow-subtle hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-brand-50">
+                <HiOutlineScissors className="w-6 h-6 text-brand-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-surface-100">{stats.resumen.total_servicios}</p>
-            <p className="text-sm text-surface-400">Servicios activos</p>
+            <p className="text-3xl font-black text-text-primary tracking-tighter">{stats.resumen.total_servicios}</p>
+            <p className="text-xs font-black uppercase tracking-widest text-text-muted mt-1">Servicios activos</p>
           </div>
 
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div className="p-2 rounded-lg bg-info/10">
-                <HiOutlineBuildingOffice2 className="w-6 h-6 text-info" />
+          <div className="card p-6 shadow-subtle hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-brand-50">
+                <HiOutlineBuildingOffice2 className="w-6 h-6 text-brand-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-surface-100">{stats.resumen.total_recursos}</p>
-            <p className="text-sm text-surface-400">Espacios Coworking</p>
+            <p className="text-3xl font-black text-text-primary tracking-tighter">{stats.resumen.total_recursos}</p>
+            <p className="text-xs font-black uppercase tracking-widest text-text-muted mt-1">Espacios Coworking</p>
           </div>
 
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div className="p-2 rounded-lg bg-warning/10">
-                <HiOutlineBanknotes className="w-6 h-6 text-warning" />
+          <div className="card p-6 shadow-subtle hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-accent-50">
+                <HiOutlineBanknotes className="w-6 h-6 text-accent-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-surface-100">{stats.ingresos.mes_actual.toFixed(2)}€</p>
-            <p className="text-sm text-surface-400">Ingresos del mes</p>
+            <p className="text-3xl font-black text-text-primary tracking-tighter">{stats.ingresos.mes_actual.toFixed(2)}€</p>
+            <p className="text-xs font-black uppercase tracking-widest text-text-muted mt-1">Ingresos del mes</p>
           </div>
         </div>
       )}
@@ -133,33 +134,35 @@ export default function Dashboard() {
       )}
 
       {/* Recent appointments */}
-      <div className="glass-card overflow-hidden">
-        <div className="p-6 border-b border-surface-800">
-          <h2 className="text-lg font-semibold text-surface-200">
+      <div className="card overflow-hidden">
+        <div className="p-8 border-b border-border-base bg-white">
+          <h2 className="text-xl font-black text-brand-500 tracking-tighter">
             {isAdmin ? 'Últimas Citas' : 'Mis Citas Recientes'}
           </h2>
         </div>
         {appointments.length === 0 ? (
-          <div className="p-12 text-center">
-            <HiOutlineCalendar className="w-12 h-12 text-surface-600 mx-auto mb-3" />
-            <p className="text-surface-400">No tienes citas todavía</p>
+          <div className="p-16 text-center">
+            <HiOutlineCalendar className="w-16 h-16 text-text-muted mx-auto mb-4 opacity-20" />
+            <p className="text-text-secondary font-bold">No tienes citas registradas todavía</p>
           </div>
         ) : (
-          <div className="divide-y divide-surface-800">
+          <div className="divide-y divide-border-base">
             {appointments.map((cita) => (
-              <div key={cita.id} className="p-4 flex items-center justify-between hover:bg-surface-800/30 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center">
-                    <HiOutlineScissors className="w-5 h-5 text-primary-400" />
+              <div key={cita.id} className="p-6 flex items-center justify-between hover:bg-surface-subtle transition-colors group">
+                <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center group-hover:bg-brand-500 transition-colors">
+                    <HiOutlineScissors className="w-6 h-6 text-brand-500 group-hover:text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-surface-200">{cita.servicio?.nombre}</p>
-                    <p className="text-sm text-surface-500">
+                    <p className="font-bold text-text-primary">{cita.servicio?.nombre}</p>
+                    <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">
                       {cita.empleado?.nombre} {cita.empleado?.apellidos} · {new Date(cita.fecha).toLocaleDateString('es-ES')} · {cita.hora_inicio}
                     </p>
                   </div>
                 </div>
-                {getStatusBadge(cita.estado)}
+                <div className="scale-90 origin-right">
+                  {getStatusBadge(cita.estado)}
+                </div>
               </div>
             ))}
           </div>

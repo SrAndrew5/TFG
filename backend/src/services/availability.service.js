@@ -13,7 +13,34 @@ async function getAvailableSlots(empleadoId, fecha, duracionMin) {
   let diaSemana = date.getDay() - 1;
   if (diaSemana < 0) diaSemana = 6; // Sunday = 6
 
-  // 1. Obtener horarios del empleado para ese día
+  // 1. Obtener el empleado y su negocio
+  const empleado = await prisma.empleado.findUnique({
+    where: { id: empleadoId },
+    include: { business: true },
+  });
+
+  if (!empleado) return [];
+
+  const business = empleado.business;
+  if (business) {
+    // Verificar si es festivo
+    if (business.festivos) {
+      const festivos = Array.isArray(business.festivos) ? business.festivos : [];
+      if (festivos.includes(fecha)) return [];
+    }
+
+    // Verificar si el negocio está cerrado este día de la semana
+    if (business.horario) {
+      const diasSemanaNombres = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+      const diaNombre = diasSemanaNombres[diaSemana];
+      const horarioDia = business.horario[diaNombre];
+      if (horarioDia && horarioDia.cerrado) {
+        return [];
+      }
+    }
+  }
+
+  // 2. Obtener horarios del empleado para ese día
   const disponibilidades = await prisma.disponibilidad.findMany({
     where: {
       empleado_id: empleadoId,
@@ -36,6 +63,7 @@ async function getAvailableSlots(empleadoId, fecha, duracionMin) {
 
   // 3. Generar todos los slots posibles
   const slots = [];
+  const addedStarts = new Set();
   const slotInterval = 15; // Intervalos de 15 minutos
 
   for (const disp of disponibilidades) {
@@ -46,20 +74,26 @@ async function getAvailableSlots(empleadoId, fecha, duracionMin) {
       const slotStart = minutesToTime(currentMinutes);
       const slotEnd = minutesToTime(currentMinutes + duracionMin);
 
-      // Verificar que no colisiona con citas existentes
-      const hasConflict = citasExistentes.some((cita) => {
-        const citaStart = timeToMinutes(cita.hora_inicio);
-        const citaEnd = timeToMinutes(cita.hora_fin);
-        return currentMinutes < citaEnd && currentMinutes + duracionMin > citaStart;
-      });
+      if (!addedStarts.has(slotStart)) {
+        // Verificar que no colisiona con citas existentes
+        const hasConflict = citasExistentes.some((cita) => {
+          const citaStart = timeToMinutes(cita.hora_inicio);
+          const citaEnd = timeToMinutes(cita.hora_fin);
+          return currentMinutes < citaEnd && currentMinutes + duracionMin > citaStart;
+        });
 
-      if (!hasConflict) {
-        slots.push({ hora_inicio: slotStart, hora_fin: slotEnd });
+        if (!hasConflict) {
+          slots.push({ hora_inicio: slotStart, hora_fin: slotEnd });
+          addedStarts.add(slotStart);
+        }
       }
 
       currentMinutes += slotInterval;
     }
   }
+
+  // Ordenar por si las disponibilidades estaban desordenadas
+  slots.sort((a, b) => timeToMinutes(a.hora_inicio) - timeToMinutes(b.hora_inicio));
 
   return slots;
 }
@@ -92,9 +126,39 @@ async function isResourceAvailable(recursoId, fecha, horaInicio, horaFin) {
  */
 async function getResourceOccupiedSlots(recursoId, fecha) {
   const date = new Date(fecha);
+  let diaSemana = date.getDay() - 1;
+  if (diaSemana < 0) diaSemana = 6;
+
+  const recurso = await prisma.recurso.findUnique({
+    where: { id: parseInt(recursoId) },
+    include: { business: true },
+  });
+
+  if (recurso && recurso.business) {
+    const business = recurso.business;
+    
+    // Verificar si es festivo
+    if (business.festivos) {
+      const festivos = Array.isArray(business.festivos) ? business.festivos : [];
+      if (festivos.includes(fecha)) {
+        return [{ hora_inicio: '00:00', hora_fin: '23:59', estado: 'CONFIRMADA' }]; // Todo el día ocupado
+      }
+    }
+
+    // Verificar si el negocio está cerrado
+    if (business.horario) {
+      const diasSemanaNombres = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+      const diaNombre = diasSemanaNombres[diaSemana];
+      const horarioDia = business.horario[diaNombre];
+      if (horarioDia && horarioDia.cerrado) {
+        return [{ hora_inicio: '00:00', hora_fin: '23:59', estado: 'CONFIRMADA' }]; // Todo el día ocupado
+      }
+    }
+  }
+
   return prisma.reservaRecurso.findMany({
     where: {
-      recurso_id: recursoId,
+      recurso_id: parseInt(recursoId),
       fecha: date,
       estado: { in: ['PENDIENTE', 'CONFIRMADA'] },
     },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import {
   HiOutlinePencilSquare,
   HiOutlineXMark,
@@ -12,6 +13,7 @@ import {
 } from 'react-icons/hi2';
 
 export default function ManageUsers() {
+  usePageTitle('Gestión de Usuarios');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,7 +41,6 @@ export default function ManageUsers() {
       setUsers(res.data.data);
     } catch (err) {
       toast.error('Error al cargar los usuarios');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -140,7 +141,7 @@ export default function ManageUsers() {
     <div className="space-y-8 animate-fade-in pb-12">
 
       <div>
-        <h1 className="text-3xl font-extrabold text-text-primary mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <h1 className="text-3xl font-extrabold text-text-primary mb-1">
           Gestión de Usuarios
         </h1>
         <p className="text-text-secondary">Administra los accesos y registros de la plataforma.</p>
@@ -227,8 +228,8 @@ export default function ManageUsers() {
                   </td>
 
                   <td className="py-4 px-6 whitespace-nowrap">
-                    <span className="text-sm font-bold text-text-primary">{user.total_citas ?? 0}</span>
-                    <span className="text-xs text-text-muted ml-1">citas</span>
+                    <span className="text-sm font-bold text-text-primary">{user.total_reservas ?? 0}</span>
+                    <span className="text-xs text-text-muted ml-1">reservas</span>
                   </td>
 
                   <td className="table-cell-action">
@@ -275,12 +276,12 @@ export default function ManageUsers() {
           <div className="bg-white rounded-[2rem] shadow-[0_24px_60px_rgba(31,41,55,0.2)] max-w-xl w-full relative z-10 animate-scale-in flex flex-col overflow-hidden border border-border-base/50">
             <div className="px-8 py-6 border-b border-border-base bg-surface-subtle/50 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-extrabold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
+                <h2 className="text-2xl font-extrabold text-text-primary">
                   Editar Usuario
                 </h2>
                 <p className="text-xs text-text-secondary mt-1">{editingUser.email}</p>
               </div>
-              <button onClick={() => !saving && setModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
+              <button onClick={() => !saving && setModalOpen(false)} aria-label="Cerrar modal" className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
                 <HiOutlineXMark className="w-5 h-5" />
               </button>
             </div>
@@ -344,7 +345,7 @@ export default function ManageUsers() {
             <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-6 ${itemToSuspend.activo ? 'bg-danger-bg' : 'bg-success-bg'}`}>
               <HiOutlineExclamationTriangle className={`w-10 h-10 ${itemToSuspend.activo ? 'text-danger-text' : 'text-success-text'}`} />
             </div>
-            <h3 className="text-2xl font-bold text-text-primary mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <h3 className="text-2xl font-bold text-text-primary mb-2">
               {itemToSuspend.activo ? 'Suspender Cuenta' : 'Reactivar Cuenta'}
             </h3>
             <p className="text-sm text-text-secondary mb-8">

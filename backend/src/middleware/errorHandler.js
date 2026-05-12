@@ -1,8 +1,10 @@
+const logger = require('../config/logger');
+
 /**
  * Middleware centralizado de manejo de errores
  */
 function errorHandler(err, req, res, _next) {
-  console.error('❌ Error:', err);
+  logger.error({ err, method: req.method, url: req.originalUrl }, 'Error no controlado');
 
   // Errores de Prisma
   if (err.code === 'P2002') {

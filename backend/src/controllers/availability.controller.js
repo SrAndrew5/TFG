@@ -62,58 +62,86 @@ async function getSlots(req, res, next) {
   }
 }
 
+async function getOwnerBusinessId(userId) {
+  const business = await prisma.business.findUnique({ where: { owner_id: userId } });
+  return business?.id ?? null;
+}
+
+async function assertEmployeeOwnership(empleadoId, businessId, res) {
+  const emp = await prisma.empleado.findUnique({ where: { id: empleadoId } });
+  if (!emp || emp.business_id !== businessId) {
+    res.status(403).json({ success: false, message: 'Este empleado no pertenece a tu negocio' });
+    return false;
+  }
+  return true;
+}
+
 /**
- * POST /api/availability (Admin)
+ * POST /api/availability
  */
 async function create(req, res, next) {
   try {
     const { empleado_id, dia_semana, hora_inicio, hora_fin } = req.body;
 
+    if (req.user.rol === 'BUSINESS_OWNER') {
+      const businessId = await getOwnerBusinessId(req.user.id);
+      if (!businessId) return res.status(403).json({ success: false, message: 'No tienes negocio registrado' });
+      if (!await assertEmployeeOwnership(empleado_id, businessId, res)) return;
+    }
+
     const disponibilidad = await prisma.disponibilidad.create({
       data: { empleado_id, dia_semana, hora_inicio, hora_fin },
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Horario creado',
-      data: disponibilidad,
-    });
+    res.status(201).json({ success: true, message: 'Horario creado', data: disponibilidad });
   } catch (error) {
     next(error);
   }
 }
 
 /**
- * PUT /api/availability/:id (Admin)
+ * PUT /api/availability/:id
  */
 async function update(req, res, next) {
   try {
+    const id = parseInt(req.params.id);
     const { hora_inicio, hora_fin } = req.body;
 
+    if (req.user.rol === 'BUSINESS_OWNER') {
+      const businessId = await getOwnerBusinessId(req.user.id);
+      if (!businessId) return res.status(403).json({ success: false, message: 'No tienes negocio registrado' });
+      const disp = await prisma.disponibilidad.findUnique({ where: { id } });
+      if (!disp) return res.status(404).json({ success: false, message: 'Horario no encontrado' });
+      if (!await assertEmployeeOwnership(disp.empleado_id, businessId, res)) return;
+    }
+
     const disponibilidad = await prisma.disponibilidad.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id },
       data: { hora_inicio, hora_fin },
     });
 
-    res.json({
-      success: true,
-      message: 'Horario actualizado',
-      data: disponibilidad,
-    });
+    res.json({ success: true, message: 'Horario actualizado', data: disponibilidad });
   } catch (error) {
     next(error);
   }
 }
 
 /**
- * DELETE /api/availability/:id (Admin)
+ * DELETE /api/availability/:id
  */
 async function remove(req, res, next) {
   try {
-    await prisma.disponibilidad.delete({
-      where: { id: parseInt(req.params.id) },
-    });
+    const id = parseInt(req.params.id);
 
+    if (req.user.rol === 'BUSINESS_OWNER') {
+      const businessId = await getOwnerBusinessId(req.user.id);
+      if (!businessId) return res.status(403).json({ success: false, message: 'No tienes negocio registrado' });
+      const disp = await prisma.disponibilidad.findUnique({ where: { id } });
+      if (!disp) return res.status(404).json({ success: false, message: 'Horario no encontrado' });
+      if (!await assertEmployeeOwnership(disp.empleado_id, businessId, res)) return;
+    }
+
+    await prisma.disponibilidad.delete({ where: { id } });
     res.json({ success: true, message: 'Horario eliminado' });
   } catch (error) {
     next(error);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import {
   HiOutlinePlus,
   HiOutlinePencilSquare,
@@ -23,10 +24,15 @@ const FORM_EMPTY = {
   ubicacion: '',
   precio_hora: '',
   equipamiento: '',
+  horario_apertura: '08:00',
+  horario_cierre: '20:00',
+  latitud: '',
+  longitud: '',
   activo: true,
 };
 
 export default function ManageResources() {
+  usePageTitle('Gestión de Espacios');
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,8 +52,8 @@ export default function ManageResources() {
     try {
       const res = await api.get('/resources');
       setResources(res.data.data);
-    } catch {
-      toast.error('Error al cargar los recursos');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Error al cargar los recursos');
     } finally {
       setLoading(false);
     }
@@ -62,14 +68,18 @@ export default function ManageResources() {
   const openEdit = (r) => {
     setEditing(r);
     setForm({
-      nombre: r.nombre || '',
-      tipo: r.tipo || 'MESA',
-      descripcion: r.descripcion || '',
-      capacidad: r.capacidad || 1,
-      ubicacion: r.ubicacion || '',
-      precio_hora: r.precio_hora || '',
-      equipamiento: r.equipamiento || '',
-      activo: r.activo,
+      nombre:           r.nombre || '',
+      tipo:             r.tipo || 'MESA',
+      descripcion:      r.descripcion || '',
+      capacidad:        r.capacidad || 1,
+      ubicacion:        r.ubicacion || '',
+      precio_hora:      r.precio_hora || '',
+      equipamiento:     r.equipamiento || '',
+      horario_apertura: r.horario_apertura || '08:00',
+      horario_cierre:   r.horario_cierre || '20:00',
+      latitud:          r.latitud ?? '',
+      longitud:         r.longitud ?? '',
+      activo:           r.activo,
     });
     setModalOpen(true);
   };
@@ -79,14 +89,18 @@ export default function ManageResources() {
     setSaving(true);
     try {
       const payload = {
-        nombre: form.nombre,
-        tipo: form.tipo,
-        descripcion: form.descripcion || null,
-        capacidad: parseInt(form.capacidad),
-        ubicacion: form.ubicacion || null,
-        precio_hora: parseFloat(form.precio_hora),
-        equipamiento: form.equipamiento || null,
-        activo: form.activo,
+        nombre:           form.nombre,
+        tipo:             form.tipo,
+        descripcion:      form.descripcion || null,
+        capacidad:        parseInt(form.capacidad),
+        ubicacion:        form.ubicacion || null,
+        precio_hora:      parseFloat(form.precio_hora),
+        equipamiento:     form.equipamiento || null,
+        horario_apertura: form.horario_apertura || '08:00',
+        horario_cierre:   form.horario_cierre || '20:00',
+        latitud:          form.latitud !== '' ? parseFloat(form.latitud) : null,
+        longitud:         form.longitud !== '' ? parseFloat(form.longitud) : null,
+        activo:           form.activo,
       };
 
       if (editing) {
@@ -138,7 +152,7 @@ export default function ManageResources() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-text-primary mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>
+          <h1 className="text-3xl font-extrabold text-text-primary mb-1">
             Gestión de Recursos Coworking
           </h1>
           <p className="text-text-secondary">Administra mesas, salas de reuniones, puestos y despachos.</p>
@@ -156,7 +170,7 @@ export default function ManageResources() {
             <span className="text-2xl">{TIPO_EMOJI[tipo]}</span>
             <div>
               <p className="text-xs text-text-muted font-bold uppercase tracking-wider">{tipo}</p>
-              <p className="text-2xl font-extrabold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
+              <p className="text-2xl font-extrabold text-text-primary">
                 {resources.filter((r) => r.tipo === tipo).length}
               </p>
             </div>
@@ -259,12 +273,12 @@ export default function ManageResources() {
 
             <div className="px-8 py-6 border-b border-border-base bg-surface-subtle/50 flex justify-between items-center sticky top-0 bg-white z-10">
               <div>
-                <h2 className="text-2xl font-extrabold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
+                <h2 className="text-2xl font-extrabold text-text-primary">
                   {editing ? 'Editar Recurso' : 'Nuevo Recurso'}
                 </h2>
                 <p className="text-xs text-text-secondary mt-1">ESPACIOS COWORKING</p>
               </div>
-              <button onClick={() => !saving && setModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
+              <button onClick={() => !saving && setModalOpen(false)} aria-label="Cerrar modal" className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
                 <HiOutlineXMark className="w-5 h-5" />
               </button>
             </div>
@@ -313,6 +327,24 @@ export default function ManageResources() {
                     <input value={form.equipamiento} onChange={(e) => field('equipamiento', e.target.value)} placeholder="Ej: Proyector, Pizarra, WiFi, TV 4K" className="input-field py-3" />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">Horario apertura</label>
+                    <input type="time" value={form.horario_apertura} onChange={(e) => field('horario_apertura', e.target.value)} className="input-field py-3" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">Horario cierre</label>
+                    <input type="time" value={form.horario_cierre} onChange={(e) => field('horario_cierre', e.target.value)} className="input-field py-3" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">Latitud (mapa)</label>
+                    <input type="number" step="any" value={form.latitud} onChange={(e) => field('latitud', e.target.value)} placeholder="Ej: 40.4168" className="input-field py-3" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">Longitud (mapa)</label>
+                    <input type="number" step="any" value={form.longitud} onChange={(e) => field('longitud', e.target.value)} placeholder="Ej: -3.7038" className="input-field py-3" />
+                  </div>
+
                   <div className="col-span-2 flex items-end">
                     <label className="flex items-center gap-3 cursor-pointer p-3 border border-border-base rounded-xl hover:bg-surface-subtle transition-colors w-full">
                       <input type="checkbox" checked={form.activo} onChange={(e) => field('activo', e.target.checked)} className="w-5 h-5 rounded border-border-strong text-brand-500 focus:ring-brand-500" />
@@ -350,7 +382,7 @@ export default function ManageResources() {
             <div className="w-20 h-20 bg-danger-bg rounded-full mx-auto flex items-center justify-center mb-6">
               <HiOutlineExclamationTriangle className="w-10 h-10 text-danger-text" />
             </div>
-            <h3 className="text-2xl font-bold text-text-primary mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <h3 className="text-2xl font-bold text-text-primary mb-2">
               Desactivar Recurso
             </h3>
             <p className="text-sm text-text-secondary mb-8">

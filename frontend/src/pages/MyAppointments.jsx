@@ -1,32 +1,41 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import toast from 'react-hot-toast';
-import { 
-  HiOutlineCalendar, 
-  HiOutlineClock, 
-  HiOutlineXMark, 
+import { useScrollLock } from '../hooks/useScrollLock';
+import { usePageTitle } from '../hooks/usePageTitle';
+import { parseDate } from '../utils/dateUtils';
+import StatusBadge from '../components/shared/StatusBadge';
+import ConfirmModal from '../components/shared/ConfirmModal';
+import ReviewModal from '../components/shared/ReviewModal';
+import StarRating from '../components/shared/StarRating';
+import {
+  HiOutlineCalendar,
+  HiOutlineClock,
+  HiOutlineXMark,
   HiOutlineEye,
   HiOutlineScissors,
   HiOutlineMapPin,
   HiOutlineFaceFrown,
   HiOutlineTicket,
   HiOutlineUser,
-  HiOutlineExclamationTriangle
+  HiOutlineStar,
+  HiOutlineSparkles,
 } from 'react-icons/hi2';
 
+const IVA_RATE = 0.21;
+const TAB_LABELS = { proximas: 'próximas', completadas: 'completadas', canceladas: 'canceladas' };
 export default function MyAppointments() {
+  usePageTitle('Mis Citas');
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('proximas');
-  
-  // Estado para el Modal
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-
-  // Estados para cancelar cita
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [canceling, setCanceling] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
 
   useEffect(() => { loadAppointments(); }, []);
 
@@ -35,17 +44,14 @@ export default function MyAppointments() {
       setLoading(true);
       const res = await api.get('/appointments');
       setAppointments(res.data.data);
-    } catch {
-      toast.error('Error al cargar citas');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Error al cargar citas');
     } finally {
       setLoading(false);
     }
   };
 
-  const requestCancel = (id) => {
-    setAppointmentToCancel(id);
-    setCancelModalOpen(true);
-  };
+  const requestCancel = (id) => { setAppointmentToCancel(id); setCancelModalOpen(true); };
 
   const confirmCancelAction = async () => {
     setCanceling(true);
@@ -53,8 +59,8 @@ export default function MyAppointments() {
       await api.put(`/appointments/${appointmentToCancel}/status`, { estado: 'CANCELADA' });
       toast.success('Cita cancelada correctamente');
       loadAppointments();
-    } catch {
-      toast.error('Error al cancelar la cita');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Error al cancelar la cita');
     } finally {
       setCanceling(false);
       setCancelModalOpen(false);
@@ -62,328 +68,223 @@ export default function MyAppointments() {
     }
   };
 
-  const getStatusBadge = (estado) => {
-    const map = { 
-      PENDIENTE: 'badge-pending', 
-      CONFIRMADA: 'badge-confirmed', 
-      CANCELADA: 'badge-cancelled', 
-      COMPLETADA: 'badge-completed' 
-    };
-    const labels = {
-      PENDIENTE: 'Pendiente',
-      CONFIRMADA: 'Confirmada',
-      CANCELADA: 'Cancelada',
-      COMPLETADA: 'Completada'
-    };
-    return <span className={`badge ${map[estado]}`}>{labels[estado]}</span>;
-  };
-
   const filteredAppointments = appointments.filter(cita => {
-    if (activeTab === 'proximas') return ['PENDIENTE', 'CONFIRMADA'].includes(cita.estado);
+    if (activeTab === 'proximas')    return ['PENDIENTE', 'CONFIRMADA'].includes(cita.estado);
     if (activeTab === 'completadas') return cita.estado === 'COMPLETADA';
-    if (activeTab === 'canceladas') return cita.estado === 'CANCELADA';
+    if (activeTab === 'canceladas')  return cita.estado === 'CANCELADA';
     return true;
   });
 
+  useScrollLock(!!selectedAppointment || cancelModalOpen);
+
   const TABS = [
-    { id: 'proximas', label: 'Próximas', count: appointments.filter(c => ['PENDIENTE', 'CONFIRMADA'].includes(c.estado)).length },
-    { id: 'completadas', label: 'Completadas', count: appointments.filter(c => c.estado === 'COMPLETADA').length },
-    { id: 'canceladas', label: 'Historial / Canceladas', count: appointments.filter(c => c.estado === 'CANCELADA').length }
+    { id: 'proximas',    label: 'Próximas',         count: appointments.filter(c => ['PENDIENTE', 'CONFIRMADA'].includes(c.estado)).length },
+    { id: 'completadas', label: 'Completadas',       count: appointments.filter(c => c.estado === 'COMPLETADA').length },
+    { id: 'canceladas',  label: 'Canceladas',        count: appointments.filter(c => c.estado === 'CANCELADA').length },
   ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-12">
-      
-      {/* ── Encabezado ── */}
-      <div className="page-header border-b border-border-base pb-6">
-        <h1 className="page-title text-4xl mb-2">Mis Citas</h1>
-        <p className="page-subtitle text-base">Gestiona tus reservas de peluquería de forma rápida y sencilla.</p>
+    <div className="max-w-5xl mx-auto pb-20 px-6 animate-fade-in">
+
+      {/* ── Header ── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+        <div>
+          <span className="text-xs font-black uppercase tracking-[0.2em] text-accent-500 mb-2 block">Peluquería & Estética</span>
+          <h1 className="text-5xl font-black text-brand-500 tracking-tighter">Mis Citas</h1>
+          <p className="text-text-secondary font-medium mt-2">Gestiona tus sesiones y servicios reservados.</p>
+        </div>
+        <button
+          onClick={() => navigate('/explorar')}
+          className="btn-primary py-4 px-8"
+        >
+          <HiOutlineSparkles className="w-5 h-5" />
+          Nueva reserva
+        </button>
       </div>
 
-      {/* ── Sistema de Tabs ── */}
-      <div className="flex bg-surface-elevated p-1.5 rounded-2xl w-fit border border-border-base shadow-xs mb-8">
+      {/* ── Tabs ── */}
+      <div className="flex gap-2 p-1.5 bg-surface-subtle rounded-full w-fit mb-10">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+            className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === tab.id 
-                ? 'bg-white text-brand-700 shadow-[0_2px_8px_rgba(99,102,241,0.1)]' 
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                ? 'bg-white text-brand-500 shadow-sm' 
+                : 'text-text-muted hover:text-brand-500'
             }`}
           >
             {tab.label}
-            <span className={`px-2 py-0.5 rounded-md text-xs ${
-              activeTab === tab.id ? 'bg-brand-50 text-brand-600' : 'bg-surface-300 text-text-muted'
-            }`}>
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${activeTab === tab.id ? 'bg-brand-500 text-white' : 'bg-brand-100 text-brand-500'}`}>
               {tab.count}
             </span>
           </button>
         ))}
       </div>
 
-      {/* ── Lista de Citas ── */}
+      {/* ── Lista ── */}
       {filteredAppointments.length === 0 ? (
-        <div className="card w-full py-16 flex flex-col items-center justify-center text-center border-dashed border-2 border-border-strong bg-surface-subtle/50">
-          <div className="w-16 h-16 rounded-full bg-surface-elevated flex items-center justify-center mb-4 text-text-muted shadow-sm">
-            {activeTab === 'proximas' ? <HiOutlineCalendar className="w-8 h-8" /> : <HiOutlineFaceFrown className="w-8 h-8" />}
-          </div>
-          <h3 className="text-xl font-bold text-text-primary mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>
-            No hay citas {activeTab}
-          </h3>
-          <p className="text-text-secondary max-w-md mx-auto">
-            {activeTab === 'proximas' ? 'Aún no has reservado ningún servicio. Cuando lo hagas, aparecerá aquí.' : 'No tienes registros en este apartado temporal.'}
+        <div className="bg-surface-subtle/50 rounded-[40px] border-2 border-dashed border-border-strong py-24 text-center">
+          <HiOutlineCalendar className="w-16 h-16 text-brand-100 mx-auto mb-6" />
+          <h3 className="text-xl font-black text-brand-500 mb-2">No tienes citas {activeTab}</h3>
+          <p className="text-text-secondary font-medium mb-8 max-w-xs mx-auto">
+            ¿Por qué no echas un vistazo a nuestros servicios disponibles?
           </p>
+          <button onClick={() => navigate('/explorar')} className="btn-secondary px-8 py-3">
+            Explorar servicios
+          </button>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredAppointments.map((cita, i) => {
-            const dateObj = new Date(cita.fecha);
-            const isCancelable = ['PENDIENTE', 'CONFIRMADA'].includes(cita.estado);
-            
+            const dateObj = parseDate(cita.fecha);
+            const esPasada = dateObj < new Date();
+            const monthStr = dateObj.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
+
             return (
-              <div 
-                key={cita.id} 
-                className="card-hover p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 animate-slide-up bg-white group"
-                style={{ animationDelay: `${i * 60}ms` }}
+              <div
+                key={cita.id}
+                className="group bg-white rounded-[32px] p-6 border border-border-base hover:border-brand-500/30 hover:shadow-subtle transition-all duration-500 animate-slide-up"
+                style={{ animationDelay: `${i * 50}ms` }}
               >
-                
-                {/* ── Info de Fecha y Detalles ── */}
-                <div className="flex gap-5 items-start">
-                  
-                  {/* Calendar Widget */}
-                  <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100 border border-brand-200 flex flex-col items-center justify-center text-brand-700 shadow-sm">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-brand-500 opacity-80">
-                      {dateObj.toLocaleDateString('es-ES', { month: 'short' })}
-                    </span>
-                    <span className="text-2xl font-extrabold leading-none" style={{ fontFamily: 'Sora, sans-serif' }}>
-                      {dateObj.getDate()}
-                    </span>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-3 mb-1.5">
-                      <h3 className="text-lg font-bold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
-                        {cita.servicio?.nombre || 'Servicio General'}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-brand-50 rounded-2xl flex flex-col items-center justify-center shrink-0">
+                      <span className="text-[10px] font-black text-brand-400 leading-none">{monthStr}</span>
+                      <span className="text-xl font-black text-brand-500 leading-none mt-1">{dateObj.getDate()}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-brand-500 tracking-tight line-clamp-1">
+                        {cita.servicio?.nombre}
                       </h3>
-                      {getStatusBadge(cita.estado)}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary mt-2">
-                      <div className="flex items-center gap-1.5">
-                        <HiOutlineClock className="w-4.5 h-4.5 text-text-muted" />
-                        <span className="font-medium">{cita.hora_inicio} - {cita.hora_fin}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <HiOutlineScissors className="w-4.5 h-4.5 text-text-muted" />
-                        <span>Por {cita.empleado?.nombre} {cita.empleado?.apellidos}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <HiOutlineMapPin className="w-4.5 h-4.5 text-text-muted" />
-                        <span>Salón Principal</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <StatusBadge estado={cita.estado} />
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* ── Precio y Acciones ── */}
-                <div className="flex items-center justify-between md:flex-col md:items-end gap-4 border-t border-border-base pt-4 md:border-none md:pt-0">
-                  <span className="text-xl font-bold text-text-primary">
-                    {parseFloat(cita.servicio?.precio || 0).toFixed(2)}€
+                  <span className="text-xl font-black text-brand-500">
+                    {parseFloat(cita.precio_pagado || cita.servicio?.precio || 0).toFixed(2)}€
                   </span>
-                  
-                  <div className="flex gap-2">
-                    <button 
-                      className="btn-secondary px-3 py-2 text-xs" 
-                      title="Ver Ticket"
-                      onClick={() => setSelectedAppointment(cita)}
-                    >
-                      <HiOutlineEye className="w-4 h-4" />
-                      Detalles
-                    </button>
-                    {isCancelable && (
-                      <button 
-                        onClick={() => requestCancel(cita.id)} 
-                        className="btn-danger px-3 py-2 text-xs bg-white hover:bg-danger-bg text-danger-text opacity-0 group-hover:opacity-100 transition-opacity md:flex" 
-                        title="Cancelar cita"
-                      >
-                        <HiOutlineXMark className="w-4 h-4" />
-                        Cancelar
-                      </button>
-                    )}
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center gap-3 text-sm font-bold text-text-secondary">
+                    <HiOutlineClock className="w-5 h-5 text-accent-500" />
+                    {cita.hora_inicio} – {cita.hora_fin}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm font-bold text-text-secondary">
+                    <HiOutlineUser className="w-5 h-5 text-accent-500" />
+                    {cita.empleado?.nombre} {cita.empleado?.apellidos}
                   </div>
                 </div>
 
+                <div className="flex gap-2 pt-6 border-t border-border-base/50">
+                  <button
+                    className="flex-1 btn-secondary py-2.5 text-xs font-black uppercase tracking-widest"
+                    onClick={() => setSelectedAppointment(cita)}
+                  >
+                    Detalles
+                  </button>
+
+                  {['PENDIENTE', 'CONFIRMADA'].includes(cita.estado) && !esPasada && (
+                    <button
+                      onClick={() => requestCancel(cita.id)}
+                      className="flex-1 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-full py-2.5 text-xs font-black uppercase tracking-widest transition-all"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+
+                  {cita.estado === 'COMPLETADA' && !cita.review && (
+                    <button
+                      onClick={() => setReviewTarget({ type: 'cita', id: cita.id, name: cita.servicio?.nombre })}
+                      className="flex-1 bg-accent-50 text-accent-600 hover:bg-accent-500 hover:text-white rounded-full py-2.5 text-xs font-black uppercase tracking-widest transition-all"
+                    >
+                      Reseñar
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* ── Espectacular Modal de Detalles de Cita ── */}
+      {/* Modal Detalle */}
       {selectedAppointment && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          {/* Backdrop con Blur */}
-          <div 
-            className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setSelectedAppointment(null)}
-          ></div>
-          
-          {/* Contenedor del Modal */}
-          <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(31,41,55,0.15)] max-w-lg w-full relative z-10 animate-scale-in flex flex-col overflow-hidden border border-border-base">
-            
-            {/* Header del Modal */}
-            <div className="p-6 border-b border-border-base bg-surface-subtle/50 flex justify-between items-start relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
-                 <HiOutlineTicket className="w-32 h-32 text-brand-900 -rotate-12" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-brand-500/20 backdrop-blur-xl" onClick={() => setSelectedAppointment(null)} />
+          <div className="bg-white rounded-[40px] shadow-2xl max-w-lg w-full relative z-10 animate-scale-in overflow-hidden border border-border-base">
+            <div className="p-8 border-b border-border-base flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black text-brand-500 tracking-tighter">Detalle de la Cita</h2>
+                <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">Ref: #{selectedAppointment.id.toString().padStart(4, '0')}</p>
               </div>
-              
-              <div className="relative z-10 pr-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="px-2.5 py-1 bg-white border border-border-base rounded-md text-[10px] font-bold text-text-secondary uppercase tracking-widest">
-                    Ticket #{selectedAppointment.id.toString().padStart(4, '0')}
-                  </span>
-                  {getStatusBadge(selectedAppointment.estado)}
-                </div>
-                <h2 className="text-2xl font-bold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
-                  {selectedAppointment.servicio?.nombre || 'Servicio Reservado'}
-                </h2>
-              </div>
-              <button 
-                onClick={() => setSelectedAppointment(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-surface-elevated text-text-secondary hover:bg-brand-50 hover:text-brand-600 transition-colors z-10 flex-shrink-0"
-              >
-                <HiOutlineXMark className="w-5 h-5" />
+              <button onClick={() => setSelectedAppointment(null)} className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-subtle hover:bg-red-50 hover:text-red-500 transition-colors">
+                <HiOutlineXMark className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Cuerpo del Modal (Cuadrícula / Grid) */}
-            <div className="p-6 space-y-6">
+            <div className="p-8 space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-surface-elevated p-4 rounded-2xl border border-border-base/50">
-                   <div className="flex items-center gap-2 text-brand-500 mb-1">
-                     <HiOutlineCalendar className="w-5 h-5" />
-                     <p className="text-xs font-bold uppercase tracking-wide">Fecha y Hora</p>
-                   </div>
-                   <p className="text-sm font-semibold text-text-primary mt-2">
-                     {new Date(selectedAppointment.fecha).toLocaleDateString('es-ES', { weekday: 'short', month: 'long', day: 'numeric' })}
-                   </p>
-                   <p className="text-sm text-text-secondary font-medium">
-                     {selectedAppointment.hora_inicio} - {selectedAppointment.hora_fin}
-                   </p>
+                <div className="bg-surface-subtle rounded-[24px] p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-accent-500 mb-2">Fecha y Hora</p>
+                  <p className="text-sm font-black text-brand-500">
+                    {parseDate(selectedAppointment.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </p>
+                  <p className="text-sm font-bold text-text-secondary mt-1">{selectedAppointment.hora_inicio} – {selectedAppointment.hora_fin}</p>
                 </div>
-                
-                <div className="bg-surface-elevated p-4 rounded-2xl border border-border-base/50">
-                   <div className="flex items-center gap-2 text-brand-500 mb-1">
-                     <HiOutlineUser className="w-5 h-5" />
-                     <p className="text-xs font-bold uppercase tracking-wide">Profesional</p>
-                   </div>
-                   <p className="text-sm font-semibold text-text-primary mt-2">
-                     {selectedAppointment.empleado?.nombre} {selectedAppointment.empleado?.apellidos}
-                   </p>
-                   <p className="text-sm text-text-muted font-medium">Especialista</p>
-                </div>
-
-                <div className="bg-surface-elevated p-4 rounded-2xl border border-border-base/50 col-span-2 flex justify-between items-center group">
-                   <div>
-                     <div className="flex items-center gap-2 text-brand-500 mb-1">
-                       <HiOutlineMapPin className="w-5 h-5" />
-                       <p className="text-xs font-bold uppercase tracking-wide">Ubicación</p>
-                     </div>
-                     <p className="text-sm font-semibold text-text-primary mt-1">
-                       Local Principal - Zona de Peluquería
-                     </p>
-                   </div>
-                   <Link to="/map?location=valencia" className="text-xs font-bold text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg group-hover:bg-brand-100 transition-colors">
-                     Ver en mapa
-                   </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Desglose de Precio y Footer */}
-            <div className="px-6 py-5 bg-surface-subtle/30 border-t border-border-base mt-auto">
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-text-secondary font-medium">Precio Base</span>
-                  <span className="text-text-primary font-semibold">
-                    {(parseFloat(selectedAppointment.servicio?.precio || 0) * 0.79).toFixed(2)}€
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-text-secondary font-medium">IVA (21%)</span>
-                  <span className="text-text-primary font-semibold">
-                    {(parseFloat(selectedAppointment.servicio?.precio || 0) * 0.21).toFixed(2)}€
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-3 border-t border-border-base border-dashed mt-2">
-                  <span className="text-text-primary font-extrabold uppercase tracking-widest text-xs">Total</span>
-                  <span className="text-2xl font-extrabold text-brand-700" style={{ fontFamily: 'Sora, sans-serif' }}>
-                    {parseFloat(selectedAppointment.servicio?.precio || 0).toFixed(2)}€
-                  </span>
+                <div className="bg-surface-subtle rounded-[24px] p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-accent-500 mb-2">Profesional</p>
+                  <p className="text-sm font-black text-brand-500">{selectedAppointment.empleado?.nombre} {selectedAppointment.empleado?.apellidos}</p>
+                  <p className="text-sm font-bold text-text-secondary mt-1">Especialista</p>
                 </div>
               </div>
 
-              <button 
-                onClick={() => setSelectedAppointment(null)}
-                className="w-full py-3.5 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-sm tracking-wide rounded-xl border border-brand-200/50 transition-colors"
-              >
-                Cerrar Detalles
-              </button>
+              <div className="bg-brand-500 text-white rounded-[32px] p-8 flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Total abonado</p>
+                  <p className="text-3xl font-black">
+                    {parseFloat(selectedAppointment.precio_pagado || selectedAppointment.servicio?.precio || 0).toFixed(2)}€
+                  </p>
+                </div>
+                <HiOutlineTicket className="w-12 h-12 opacity-20" />
+              </div>
             </div>
-            
-          </div>
-        </div>
-      )}
 
-      {/* ── Danger Modal para Confirmación de Cancelación ── */}
-      {cancelModalOpen && appointmentToCancel && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 text-center">
-          <div className="absolute inset-0 bg-brand-950/40 backdrop-blur-md transition-opacity" onClick={() => !canceling && setCancelModalOpen(false)}></div>
-          
-          <div className="inline-block bg-white rounded-3xl shadow-[0_24px_60px_rgba(31,41,55,0.2)] max-w-sm w-full relative z-10 animate-scale-in overflow-hidden border border-border-base/50 p-8 text-center text-left align-middle transition-all transform">
-            <div className="w-20 h-20 bg-danger-bg rounded-full mx-auto flex items-center justify-center mb-6 shadow-[0_4px_24px_rgba(239,68,68,0.25)]">
-              <HiOutlineExclamationTriangle className="w-10 h-10 text-danger-text" />
-            </div>
-            
-            <h3 className="text-2xl font-bold text-text-primary mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
-              Cancelar Reserva
-            </h3>
-            
-            <p className="text-sm text-text-secondary mb-8">
-              ¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer y el tramo horario quedará libre para otros clientes.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-              <button 
-                type="button" 
-                onClick={() => setCancelModalOpen(false)} 
-                disabled={canceling} 
-                className="w-full btn-secondary bg-surface-elevated hover:bg-surface-300 border-transparent py-3 text-sm font-bold"
-              >
-                Cerrar
-              </button>
-              <button 
-                type="button" 
-                onClick={confirmCancelAction} 
-                disabled={canceling} 
-                className="w-full btn-danger flex items-center justify-center py-3 text-sm font-bold tracking-wide transition-colors duration-200"
-              >
-                {canceling ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Sí, Cancelar'}
+            <div className="p-8 bg-surface-subtle">
+              <button onClick={() => setSelectedAppointment(null)} className="btn-secondary w-full py-4 text-sm font-black uppercase tracking-widest bg-white">
+                Cerrar Detalle
               </button>
             </div>
           </div>
         </div>
       )}
 
+      <ConfirmModal
+        open={cancelModalOpen && !!appointmentToCancel}
+        title="Cancelar Cita"
+        message="¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer."
+        confirmLabel="Sí, Cancelar"
+        loading={canceling}
+        onConfirm={confirmCancelAction}
+        onClose={() => setCancelModalOpen(false)}
+      />
+
+      <ReviewModal
+        open={!!reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        target={reviewTarget}
+        onSuccess={loadAppointments}
+      />
     </div>
   );
 }

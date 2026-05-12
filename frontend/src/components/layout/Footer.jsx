@@ -4,157 +4,99 @@ import {
   HiOutlineEnvelope,
   HiOutlinePhone,
   HiOutlineMapPin,
+  HiOutlineAcademicCap,
+  HiOutlineCommandLine,
 } from 'react-icons/hi2';
 
-const FOOTER_LINKS = {
-  servicios: [
-    { label: 'Servicios de Peluquería', to: '/services' },
-    { label: 'Espacios Coworking',      to: '/resources' },
-    { label: 'Mis Citas',              to: '/my-appointments' },
-    { label: 'Mis Reservas',           to: '/my-bookings' },
-  ],
-  empresa: [
-    { label: 'Panel Principal', to: '/' },
-  ],
-};
+const NAV_LINKS = [
+  { label: 'Explorar Espacios', to: '/explorar' },
+  { label: 'Mis Reservas',       to: '/my-bookings' },
+  { label: 'Servicios',          to: '/resources' },
+];
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-white border-t border-border-base mt-16">
+    <footer className="bg-brand-500 text-white pt-14 pb-10 mt-12">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
 
-      {/* ── Franja brand superior ── */}
-      <div className="h-1 w-full bg-gradient-to-r from-brand-500 via-brand-400 to-accent-500" />
-
-      {/* ── Contenido principal ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-
-          {/* Columna 1: Brand */}
-          <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2.5 mb-4 group w-fit">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-[0_2px_8px_rgba(99,102,241,0.30)] group-hover:shadow-[0_4px_12px_rgba(99,102,241,0.45)] transition-shadow duration-200">
-                <HiOutlineCalendar className="w-5 h-5 text-white" />
+          {/* Brand & Mission */}
+          <div className="lg:col-span-2 space-y-6">
+            <Link to="/" className="flex items-center gap-3 group w-fit">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/10 group-hover:bg-accent-500 transition-all duration-500">
+                <HiOutlineCalendar className="w-6 h-6 text-white" />
               </div>
-              <span
-                className="text-xl font-bold text-gradient-brand"
-                style={{ fontFamily: 'Sora, sans-serif' }}
-              >
-                ReservasPro
-              </span>
+              <span className="text-xl font-black tracking-tighter text-white">COWORK<span className="text-accent-500">PRO</span></span>
             </Link>
 
-            <p className="text-text-secondary text-sm leading-relaxed max-w-xs">
-              Gestión de reservas para coworking y servicios de peluquería.
-              Simples, rápidas y sin complicaciones.
+            <p className="text-brand-100/60 text-sm font-medium leading-relaxed max-w-md">
+              La plataforma definitiva para la gestión de espacios de coworking. 
+              Reserva de forma instantánea y profesional.
             </p>
 
-            {/* Contacto */}
-            <div className="mt-6 space-y-2.5">
-              <a
-                href="mailto:hola@reservaspro.local"
-                className="flex items-center gap-3 text-sm text-text-secondary hover:text-brand-600 transition-colors duration-200 group"
-              >
-                <span className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center group-hover:bg-brand-100 transition-colors duration-200">
-                  <HiOutlineEnvelope className="w-3.5 h-3.5 text-brand-500" />
-                </span>
-                hola@reservaspro.local
-              </a>
-              <a
-                href="tel:+34900000000"
-                className="flex items-center gap-3 text-sm text-text-secondary hover:text-brand-600 transition-colors duration-200 group"
-              >
-                <span className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center group-hover:bg-brand-100 transition-colors duration-200">
-                  <HiOutlinePhone className="w-3.5 h-3.5 text-brand-500" />
-                </span>
-                +34 900 000 000
-              </a>
-              <div className="flex items-center gap-3 text-sm text-text-secondary">
-                <span className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center flex-shrink-0">
-                  <HiOutlineMapPin className="w-3.5 h-3.5 text-brand-500" />
-                </span>
-                Béjar, Salamanca, España
-              </div>
-            </div>
-          </div>
-
-          {/* Columna 2: Servicios */}
-          <div>
-            <h3
-              className="text-sm font-bold text-text-primary mb-4 uppercase tracking-wider"
-              style={{ fontFamily: 'Sora, sans-serif' }}
-            >
-              Plataforma
-            </h3>
-            <ul className="space-y-2.5">
-              {FOOTER_LINKS.servicios.map((link) => (
-                <li key={link.to}>
-                  <Link
-                    to={link.to}
-                    className="text-sm text-text-secondary hover:text-brand-600 transition-colors duration-200 flex items-center gap-1.5 group"
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              {[
+                { href: 'mailto:aiordache02@educarex.es', icon: HiOutlineEnvelope, label: 'aiordache02@educarex.es' },
+                { href: 'tel:+34643312524',            icon: HiOutlinePhone,    label: '+34 643 312 524' },
+                { label: 'Navalmoral de la Mata — España', icon: HiOutlineMapPin,    isText: true },
+              ].map((item, idx) => (
+                item.isText ? (
+                  <div key={idx} className="flex items-center gap-3 text-brand-100/40 text-[11px] font-bold">
+                    <item.icon className="w-4 h-4 text-accent-500" />
+                    {item.label}
+                  </div>
+                ) : (
+                  <a key={idx} href={item.href}
+                    className="flex items-center gap-3 group w-fit text-brand-100/60 hover:text-white transition-colors text-[11px] font-bold"
                   >
-                    <span className="w-1 h-1 rounded-full bg-brand-300 group-hover:bg-brand-500 transition-colors duration-200 flex-shrink-0" />
-                    {link.label}
-                  </Link>
-                </li>
+                    <item.icon className="w-4 h-4 text-accent-500" />
+                    {item.label}
+                  </a>
+                )
               ))}
-            </ul>
+            </div>
           </div>
 
-          {/* Columna 3: Badge proyecto */}
-          <div>
-            <h3
-              className="text-sm font-bold text-text-primary mb-4 uppercase tracking-wider"
-              style={{ fontFamily: 'Sora, sans-serif' }}
-            >
-              Proyecto
-            </h3>
-            <div className="rounded-xl border border-border-base bg-surface-subtle p-4">
-              <p className="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">
-                Proyecto TFG
-              </p>
-              <p className="text-sm font-semibold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
-                2º DAM — 2025/26
-              </p>
-              <p className="text-xs text-text-muted mt-1">
-                IES Augustóbrigas
-              </p>
-              <div className="mt-3 pt-3 border-t border-border-base">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <span className="text-xs text-success-text font-medium">
-                    Entorno local activo
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stack tecnológico */}
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {['React', 'Node.js', 'Prisma', 'PostgreSQL'].map((tech) => (
-                <span
-                  key={tech}
-                  className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-100"
+          {/* Quick Links */}
+          <div className="lg:pt-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent-500 mb-6">Explorar</p>
+            <div className="space-y-3">
+              {NAV_LINKS.map((link) => (
+                <Link 
+                  key={link.to} 
+                  to={link.to} 
+                  className="block text-brand-100/50 hover:text-white text-xs font-bold transition-all hover:translate-x-1"
                 >
-                  {tech}
-                </span>
+                  {link.label}
+                </Link>
               ))}
+            </div>
+          </div>
+
+          {/* Academic Info */}
+          <div className="lg:pt-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accent-500 mb-6">Académico</p>
+            <div className="flex items-center gap-4 bg-white/5 border border-white/5 p-5 rounded-2xl backdrop-blur-sm">
+              <HiOutlineAcademicCap className="w-7 h-7 text-accent-500 shrink-0" />
+              <div>
+                 <p className="text-[12px] font-black text-white leading-tight mb-1">TFG 2026 · Dam</p>
+                 <p className="text-[10px] text-brand-100/40 font-bold uppercase tracking-widest">IES Augustóbrigas</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Barra inferior ── */}
-      <div className="border-t border-border-base">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-text-muted text-center sm:text-left">
-            © {year} ReservasPro. Proyecto educativo sin fines comerciales.
+        <div className="h-px w-full bg-white/5 my-8" />
+
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <p className="text-brand-100/20 text-[11px] font-bold uppercase tracking-widest">
+            © {year} COWORKPRO
           </p>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-text-muted">Hecho con</span>
-            <span className="text-xs font-semibold text-gradient-brand">Arctic Clarity</span>
-            <span className="text-xs text-text-muted">Design System</span>
+          <div className="flex items-center gap-3 opacity-30">
+            <HiOutlineCommandLine className="w-4 h-4 text-brand-100/20" />
+            <span className="text-[10px] font-black text-brand-100/10 tracking-widest uppercase">Organic Premium Stack</span>
           </div>
         </div>
       </div>

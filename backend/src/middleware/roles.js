@@ -11,6 +11,10 @@ function authorize(...roles) {
       });
     }
 
+    if (req.user.rol === 'SUPERADMIN') {
+      return next();
+    }
+
     if (!roles.includes(req.user.rol)) {
       return res.status(403).json({
         success: false,

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const authConfig = require('../config/auth');
 
 /**
- * Genera un token JWT para el usuario
+ * Genera un Access Token (corto plazo: 15 min)
  */
 function generateToken(user) {
   return jwt.sign(
@@ -10,17 +10,26 @@ function generateToken(user) {
       userId: user.id,
       email: user.email,
       rol: user.rol,
+      business_id: user.business?.id || user.business_id || null,
     },
     authConfig.secret,
-    { expiresIn: authConfig.expiration }
+    { expiresIn: '15m' }
   );
 }
 
 /**
- * Verifica y decodifica un token JWT
+ * Genera un Refresh Token (largo plazo: 7 días)
  */
-function verifyToken(token) {
-  return jwt.verify(token, authConfig.secret);
+function generateRefreshToken(user) {
+  return jwt.sign(
+    { userId: user.id },
+    authConfig.refreshSecret,
+    { expiresIn: '7d' }
+  );
 }
 
-module.exports = { generateToken, verifyToken };
+function verifyToken(token, isRefresh = false) {
+  return jwt.verify(token, isRefresh ? authConfig.refreshSecret : authConfig.secret);
+}
+
+module.exports = { generateToken, generateRefreshToken, verifyToken };

@@ -1,43 +1,44 @@
 const { Router } = require('express');
-const path = require('path');
+const prisma = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 
 const router = Router();
 
 /**
  * GET /api/discount-codes/validate?code=XXXX
- * Valida un código de descuento. Requiere autenticación.
+ * Solo informativo — el descuento real lo aplica el servidor en pricing.service
+ * cuando se crea la cita/reserva. Aquí no consumimos uso, solo verificamos.
  */
-router.get('/validate', authenticate, (req, res) => {
+router.get('/validate', authenticate, async (req, res, next) => {
   try {
     const { code } = req.query;
-
     if (!code || !code.trim()) {
       return res.status(400).json({ success: false, message: 'Introduce un código de descuento' });
     }
 
-    // Cargamos el JSON en cada petición para que los cambios en el fichero se reflejen sin reiniciar
-    const codesPath = path.join(__dirname, '../config/discount-codes.json');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    delete require.cache[require.resolve(codesPath)];
-    const codes = require(codesPath);
+    const codigo = code.trim().toUpperCase();
+    const cd = await prisma.codigoDescuento.findUnique({ where: { codigo } });
 
-    const found = codes.find((c) => c.code === code.trim().toUpperCase());
-
-    if (!found) {
-      return res.status(404).json({ success: false, message: 'Código de descuento no válido o expirado' });
+    if (!cd || !cd.activo) {
+      return res.status(404).json({ success: false, message: 'Código de descuento no válido' });
+    }
+    if (cd.fecha_expiry && cd.fecha_expiry < new Date()) {
+      return res.status(404).json({ success: false, message: 'Código de descuento expirado' });
+    }
+    if (cd.max_usos !== null && cd.usos_actuales >= cd.max_usos) {
+      return res.status(404).json({ success: false, message: 'Código de descuento agotado' });
     }
 
     return res.json({
       success: true,
       data: {
-        code: found.code,
-        percent: found.percent,
-        description: found.description,
+        code: cd.codigo,
+        percent: cd.porcentaje,
+        description: cd.descripcion,
       },
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Error al validar el código' });
+    next(error);
   }
 });
 

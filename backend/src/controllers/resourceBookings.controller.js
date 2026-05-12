@@ -1,6 +1,8 @@
 const prisma = require('../config/database');
 const { isResourceAvailable, getResourceOccupiedSlots } = require('../services/availability.service');
 const { sendResourceBookingConfirmation } = require('../services/email.service');
+const { priceForResourceBooking } = require('../services/pricing.service');
+const logger = require('../config/logger');
 
 /**
  * GET /api/resource-bookings
@@ -8,7 +10,9 @@ const { sendResourceBookingConfirmation } = require('../services/email.service')
  */
 async function getAll(req, res, next) {
   try {
-    const { estado, fecha_desde, fecha_hasta, recurso_id } = req.query;
+    const { estado, fecha_desde, fecha_hasta, recurso_id, page = 1, limit = 20 } = req.query;
+    const take = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+    const skip = (Math.max(parseInt(page) || 1, 1) - 1) * take;
     const where = {};
 
     if (req.user.rol !== 'ADMIN') {
@@ -23,20 +27,26 @@ async function getAll(req, res, next) {
       if (fecha_hasta) where.fecha.lte = new Date(fecha_hasta);
     }
 
-    const reservas = await prisma.reservaRecurso.findMany({
-      where,
-      include: {
-        usuario: {
-          select: { id: true, nombre: true, apellidos: true, email: true },
+    const [reservas, total] = await Promise.all([
+      prisma.reservaRecurso.findMany({
+        where,
+        include: {
+          usuario: {
+            select: { id: true, nombre: true, apellidos: true, email: true },
+          },
+          recurso: {
+            select: { id: true, nombre: true, tipo: true, ubicacion: true, precio_hora: true },
+          },
+          review: { select: { id: true, rating: true, comentario: true } },
         },
-        recurso: {
-          select: { id: true, nombre: true, tipo: true, ubicacion: true, precio_hora: true },
-        },
-      },
-      orderBy: [{ fecha: 'desc' }, { hora_inicio: 'asc' }],
-    });
+        orderBy: [{ fecha: 'desc' }, { hora_inicio: 'asc' }],
+        skip,
+        take,
+      }),
+      prisma.reservaRecurso.count({ where }),
+    ]);
 
-    res.json({ success: true, data: reservas });
+    res.json({ success: true, data: reservas, total, page: parseInt(page), limit: take });
   } catch (error) {
     next(error);
   }
@@ -76,10 +86,28 @@ async function checkAvailability(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { recurso_id, fecha, hora_inicio, hora_fin, notas } = req.body;
+    // OJO: precio_pagado NO se acepta del cliente. Lo recalcula el servidor.
+    const { recurso_id, fecha, hora_inicio, hora_fin, notas, codigo_descuento } = req.body;
 
-    // Verificar que el recurso existe y está activo
-    const recurso = await prisma.recurso.findUnique({ where: { id: recurso_id } });
+    // Validar que la fecha no sea pasada
+    const fechaReserva = new Date(fecha);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    if (fechaReserva < hoy) {
+      return res.status(400).json({ success: false, message: 'No se puede reservar en una fecha pasada' });
+    }
+
+    // Verificar que el recurso existe, está activo y su negocio también lo está
+    const recurso = await prisma.recurso.findUnique({
+      where: { id: recurso_id },
+      select: {
+        activo: true,
+        business_id: true,
+        precio_hora: true,
+        business: { select: { estado: true } },
+      },
+    });
+
     if (!recurso || !recurso.activo) {
       return res.status(404).json({
         success: false,
@@ -87,37 +115,62 @@ async function create(req, res, next) {
       });
     }
 
-    // Verificar disponibilidad
-    const available = await isResourceAvailable(recurso_id, fecha, hora_inicio, hora_fin);
-    if (!available) {
+    // Si el recurso pertenece a un negocio, éste debe estar ACTIVO
+    if (recurso.business_id && recurso.business?.estado !== 'ACTIVO') {
       return res.status(409).json({
         success: false,
-        message: 'El recurso no está disponible en el horario seleccionado',
+        message: 'Este espacio no está disponible actualmente',
       });
     }
 
-    // Crear reserva
-    const reserva = await prisma.reservaRecurso.create({
-      data: {
-        usuario_id: req.user.id,
-        recurso_id,
-        fecha: new Date(fecha),
-        hora_inicio,
-        hora_fin,
-        notas,
-      },
-      include: {
-        recurso: true,
-      },
+    // Verificar disponibilidad y crear reserva en una sola transacción
+    // con bloqueo pesimista para evitar race conditions en entornos de alta concurrencia
+    const reserva = await prisma.$transaction(async (tx) => {
+      // 1. Bloqueamos el recurso específico ANTES de cualquier comprobación (FIX 1)
+      await tx.$executeRaw`SELECT * FROM recursos WHERE id = ${recurso_id} FOR UPDATE`;
+
+      const conflict = await tx.reservaRecurso.findFirst({
+        where: {
+          recurso_id,
+          fecha: fechaReserva,
+          estado: { notIn: ['CANCELADA'] },
+          hora_inicio: { lt: hora_fin },
+          hora_fin: { gt: hora_inicio },
+        },
+      });
+
+      if (conflict) {
+        const err = new Error('El recurso ya ha sido reservado por otro usuario en este instante.');
+        err.statusCode = 409;
+        throw err;
+      }
+
+      // Precio recalculado server-side (le pasamos el recurso ya cargado)
+      const precioFinal = await priceForResourceBooking(tx, recurso, hora_inicio, hora_fin, codigo_descuento);
+
+      return tx.reservaRecurso.create({
+        data: {
+          usuario_id: req.user.id,
+          recurso_id,
+          fecha: fechaReserva,
+          hora_inicio,
+          hora_fin,
+          notas,
+          precio_pagado: precioFinal,
+          codigo_descuento: codigo_descuento ? codigo_descuento.trim().toUpperCase() : null,
+          business_id: recurso.business_id,
+        },
+        include: {
+          recurso: true,
+        },
+      });
     });
 
-    // Enviar email
-    const usuario = await prisma.usuario.findUnique({ where: { id: req.user.id } });
-    sendResourceBookingConfirmation(
-      { ...reserva, fecha },
-      usuario,
-      reserva.recurso
-    );
+    // Enviar email en segundo plano (no bloquea la respuesta)
+    prisma.usuario.findUnique({ where: { id: req.user.id } }).then((usuario) => {
+      sendResourceBookingConfirmation({ ...reserva, fecha }, usuario, reserva.recurso)
+        .catch((err) => logger.error({ err }, 'Error enviando email de confirmación de reserva'));
+    });
 
     res.status(201).json({
       success: true,
@@ -125,6 +178,10 @@ async function create(req, res, next) {
       data: reserva,
     });
   } catch (error) {
+    // Errores de dominio (404 recurso, 400 código, 409 slot ocupado)
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     next(error);
   }
 }
@@ -149,7 +206,7 @@ async function updateStatus(req, res, next) {
       return res.status(403).json({ success: false, message: 'No tienes acceso a esta reserva' });
     }
 
-    if (req.user.rol === 'CLIENTE' && estado !== 'CANCELADA') {
+    if (req.user.rol !== 'ADMIN' && estado !== 'CANCELADA') {
       return res.status(403).json({
         success: false,
         message: 'Solo puedes cancelar tus reservas',

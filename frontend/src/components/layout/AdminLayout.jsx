@@ -1,26 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getAdminBusinesses } from '../../services/businessService';
 import {
   HiOutlineChartPie,
-  HiOutlineCalendar,
-  HiOutlineScissors,
   HiOutlineUsers,
-  HiOutlineCog6Tooth,
   HiOutlineBars3,
   HiOutlineXMark,
   HiOutlineArrowRightOnRectangle,
-  HiOutlineBriefcase,
   HiOutlineBuildingOffice2,
+  HiOutlineBuildingStorefront,
 } from 'react-icons/hi2';
 
 const ADMIN_LINKS = [
-  { to: '/admin',              icon: HiOutlineChartPie,         label: 'Dashboard' },
-  { to: '/admin/appointments', icon: HiOutlineCalendar,         label: 'Reservas Citas' },
-  { to: '/admin/resources',    icon: HiOutlineBuildingOffice2,  label: 'Espacios Coworking' },
-  { to: '/admin/services',     icon: HiOutlineScissors,         label: 'Servicios' },
-  { to: '/admin/users',        icon: HiOutlineUsers,            label: 'Usuarios / Clientes' },
-  { to: '/admin/employees',    icon: HiOutlineBriefcase,        label: 'Equipo / Especialistas' },
+  { to: '/admin',            icon: HiOutlineChartPie,           label: 'Dashboard' },
+  { to: '/admin/resources',  icon: HiOutlineBuildingOffice2,    label: 'Espacios Coworking' },
+  { to: '/admin/users',      icon: HiOutlineUsers,              label: 'Usuarios / Clientes' },
+  { to: '/admin/businesses', icon: HiOutlineBuildingStorefront, label: 'Empresas', showPendingBadge: true },
 ];
 
 export default function AdminLayout() {
@@ -28,10 +24,20 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pendientesEmpresas, setPendientesEmpresas] = useState(0);
 
   // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Cargar contador de empresas pendientes (solo lectura, refresca al cambiar de ruta dentro del admin)
+  useEffect(() => {
+    let alive = true;
+    getAdminBusinesses({ estado: 'PENDIENTE', limit: 1 })
+      .then((res) => { if (alive) setPendientesEmpresas(res.data.meta?.pendientes ?? 0); })
+      .catch(() => { /* silencioso, no bloquea el layout */ });
+    return () => { alive = false; };
   }, [location.pathname]);
 
   const isActive = (path) => {
@@ -67,7 +73,7 @@ export default function AdminLayout() {
             <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shadow-inner">
               <HiOutlineChartPie className="w-4.5 h-4.5 text-accent-300" />
             </div>
-            <span className="font-extrabold tracking-wide text-lg" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <span className="font-extrabold tracking-wide text-lg">
               Admin<span className="text-brand-300">Pro</span>
             </span>
           </div>
@@ -103,7 +109,15 @@ export default function AdminLayout() {
                 }`}
             >
               <link.icon className={`w-5 h-5 transition-transform duration-200 ${isActive(link.to) ? 'scale-110 text-white' : 'text-brand-400 group-hover:text-brand-300'}`} />
-              {link.label}
+              <span className="flex-1">{link.label}</span>
+              {link.showPendingBadge && pendientesEmpresas > 0 && (
+                <span
+                  className="px-2 py-0.5 rounded-full bg-accent-500 text-white text-[10px] font-bold tracking-wide animate-pulse"
+                  aria-label={`${pendientesEmpresas} pendientes`}
+                >
+                  {pendientesEmpresas}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -124,7 +138,7 @@ export default function AdminLayout() {
       <main className="flex-1 h-screen overflow-y-auto flex flex-col min-w-0">
         {/* Header Superior del Contenido (Desplazado en móvil por el botón de menú) */}
         <header className="h-20 lg:flex hidden items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-border-base sticky top-0 z-30 shadow-[0_2px_12px_rgba(99,102,241,0.02)]">
-          <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
+          <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">
             {ADMIN_LINKS.find(link => isActive(link.to))?.label || 'Panel de Administración'}
           </h2>
           <button

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma *)",
+      "Bash(sed -i 's/### 15\\\\. `formatCardNumber`/### ✅ 15. `formatCardNumber`/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(sed -i 's/### 16\\\\. `getStatusBadge`/### ✅ 16. `getStatusBadge`/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(sed -i 's/### 19\\\\. Home muestra/### ✅ 19. Home muestra/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(sed -i 's/### 12\\\\. Cambiar contraseña/### ✅ 12. Cambiar contraseña/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(sed -i 's/### 29\\\\. Sin página 404/### ✅ 29. Sin página 404/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(sed -i 's/### 10\\\\. No se valida/### ✅ 10. No se valida/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(sed -i 's/### 13\\\\. BookResource y BookAppointment/### ✅ 13. BookResource y BookAppointment/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(sed -i 's/### 14\\\\. Dashboard admin/### ✅ 14. Dashboard admin/' \"c:/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/MEJORAS.md\")",
+      "Bash(xargs sed *)",
+      "Bash(node -e \"require\\('multer'\\); console.log\\('ok'\\)\")",
+      "Bash(npm install *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -v \"^$\\\\|update\\\\|pris.ly\\\\|npm i\\\\|guide\\\\|major\\\\|└\\\\|┌\\\\|│\\\\|warn The config\")",
+      "Bash(npm run *)",
+      "Bash(netstat -ano)",
+      "Bash(npx vite *)",
+      "Bash(grep -r \"^\\\\s*//.*\" /c/Users/SrAndrew/Desktop/TrabajoTFG/ProyectoTFG/frontend/src --include=\"*.jsx\" --include=\"*.js\")"
+    ]
+  }
+}

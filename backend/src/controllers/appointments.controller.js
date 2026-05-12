@@ -1,6 +1,9 @@
 const prisma = require('../config/database');
 const { getAvailableSlots, timeToMinutes } = require('../services/availability.service');
 const { sendAppointmentConfirmation, sendAppointmentCancellation } = require('../services/email.service');
+const { priceForAppointment } = require('../services/pricing.service');
+const { audit } = require('../middleware/audit');
+const logger = require('../config/logger');
 
 /**
  * GET /api/appointments
@@ -8,7 +11,10 @@ const { sendAppointmentConfirmation, sendAppointmentCancellation } = require('..
  */
 async function getAll(req, res, next) {
   try {
-    const { estado, fecha_desde, fecha_hasta } = req.query;
+    const { estado, fecha_desde, fecha_hasta, page = 1, limit = 20 } = req.query;
+    // Cap a 100 para evitar que un cliente pida ?limit=999999 y haga DoS al servidor
+    const take = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+    const skip = (Math.max(parseInt(page) || 1, 1) - 1) * take;
     const where = {};
 
     // Si no es admin, solo sus citas
@@ -23,23 +29,30 @@ async function getAll(req, res, next) {
       if (fecha_hasta) where.fecha.lte = new Date(fecha_hasta);
     }
 
-    const citas = await prisma.cita.findMany({
-      where,
-      include: {
-        usuario: {
-          select: { id: true, nombre: true, apellidos: true, email: true, telefono: true },
+    const [citas, total] = await Promise.all([
+      prisma.cita.findMany({
+        where,
+        include: {
+          usuario: {
+            select: { id: true, nombre: true, apellidos: true, email: true, telefono: true },
+          },
+          empleado: {
+            select: { id: true, nombre: true, apellidos: true, especialidad: true },
+          },
+          servicio: {
+            select: { id: true, nombre: true, duracion_min: true, precio: true, categoria: true },
+          },
+          // Para que el frontend sepa si esta cita ya tiene reseña y oculte el botón
+          review: { select: { id: true, rating: true, comentario: true } },
         },
-        empleado: {
-          select: { id: true, nombre: true, apellidos: true, especialidad: true },
-        },
-        servicio: {
-          select: { id: true, nombre: true, duracion_min: true, precio: true, categoria: true },
-        },
-      },
-      orderBy: [{ fecha: 'desc' }, { hora_inicio: 'asc' }],
-    });
+        orderBy: [{ fecha: 'desc' }, { hora_inicio: 'asc' }],
+        skip,
+        take,
+      }),
+      prisma.cita.count({ where }),
+    ]);
 
-    res.json({ success: true, data: citas });
+    res.json({ success: true, data: citas, total, page: parseInt(page), limit: take });
   } catch (error) {
     next(error);
   }
@@ -83,7 +96,16 @@ async function getById(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { empleado_id, servicio_id, fecha, hora_inicio, notas } = req.body;
+    // OJO: precio_pagado NO se acepta del cliente. Lo recalcula el servidor.
+    const { empleado_id, servicio_id, fecha, hora_inicio, notas, codigo_descuento } = req.body;
+
+    // Validar que la fecha no sea pasada
+    const fechaReserva = new Date(fecha);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    if (fechaReserva < hoy) {
+      return res.status(400).json({ success: false, message: 'No se puede reservar en una fecha pasada' });
+    }
 
     // Obtener servicio para calcular hora_fin
     const servicio = await prisma.servicio.findUnique({ where: { id: servicio_id } });
@@ -107,42 +129,72 @@ async function create(req, res, next) {
     const endMinutes = startMinutes + servicio.duracion_min;
     const hora_fin = `${Math.floor(endMinutes / 60).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
 
-    // Verificar disponibilidad
-    const slots = await getAvailableSlots(empleado_id, fecha, servicio.duracion_min);
-    const isAvailable = slots.some((slot) => slot.hora_inicio === hora_inicio);
+    // Verificar disponibilidad y crear la cita en una sola transacción
+    // con bloqueo pesimista sobre el empleado para evitar race conditions
+    const cita = await prisma.$transaction(async (tx) => {
+      // 1. Bloqueamos la fila del empleado para serializar reservas concurrentes
+      await tx.$executeRaw`SELECT * FROM empleados WHERE id = ${empleado_id} FOR UPDATE`;
 
-    if (!isAvailable) {
-      return res.status(409).json({
-        success: false,
-        message: 'El horario seleccionado no está disponible',
+      // 2. Verificar conflictos: mismo empleado, misma fecha, no cancelada, rango solapado
+      const conflict = await tx.cita.findFirst({
+        where: {
+          empleado_id,
+          fecha: fechaReserva,
+          estado: { notIn: ['CANCELADA'] },
+          AND: [
+            { hora_inicio: { lt: hora_fin } },
+            { hora_fin: { gt: hora_inicio } }
+          ]
+        },
       });
-    }
 
-    // Crear la cita
-    const cita = await prisma.cita.create({
-      data: {
-        usuario_id: req.user.id,
-        empleado_id,
-        servicio_id,
-        fecha: new Date(fecha),
-        hora_inicio,
-        hora_fin,
-        notas,
-      },
-      include: {
-        empleado: { select: { id: true, nombre: true, apellidos: true } },
-        servicio: { select: { id: true, nombre: true, precio: true } },
-      },
+      if (conflict) {
+        const err = new Error('El horario seleccionado ya no está disponible. Por favor, elige otro momento.');
+        err.statusCode = 409;
+        throw err;
+      }
+
+      // El precio se calcula DENTRO de la transacción
+      const precioFinal = await priceForAppointment(tx, servicio_id, codigo_descuento);
+
+      // Denormalizamos business_id desde el servicio, si existe. Permite al panel
+      // BUSINESS_OWNER filtrar sus citas en una sola query indexada.
+      const serv = await tx.servicio.findUnique({
+        where: { id: servicio_id },
+        select: { business_id: true },
+      });
+
+      return tx.cita.create({
+        data: {
+          usuario_id: req.user.id,
+          empleado_id,
+          servicio_id,
+          fecha: fechaReserva,
+          hora_inicio,
+          hora_fin,
+          notas,
+          precio_pagado: precioFinal,
+          codigo_descuento: codigo_descuento ? codigo_descuento.trim().toUpperCase() : null,
+          business_id: serv?.business_id ?? null,
+        },
+        include: {
+          empleado: { select: { id: true, nombre: true, apellidos: true } },
+          servicio: { select: { id: true, nombre: true, precio: true } },
+        },
+      });
     });
 
-    // Enviar email de confirmación
-    const usuario = await prisma.usuario.findUnique({ where: { id: req.user.id } });
-    sendAppointmentConfirmation(
-      { ...cita, fecha: fecha },
-      usuario,
-      cita.servicio,
-      cita.empleado
-    );
+    // Enviar email de confirmación en segundo plano (no bloquea la respuesta)
+    prisma.usuario.findUnique({ where: { id: req.user.id } }).then((usuario) => {
+      sendAppointmentConfirmation(
+        { ...cita, fecha },
+        usuario,
+        cita.servicio,
+        cita.empleado
+      ).catch((err) => logger.error({ err }, 'Error enviando email de confirmación de cita'));
+    });
+
+    audit({ usuarioId: req.user.id, accion: 'CREAR_CITA', entidad: 'cita', entidadId: cita.id, ip: req.ip });
 
     res.status(201).json({
       success: true,
@@ -150,6 +202,10 @@ async function create(req, res, next) {
       data: cita,
     });
   } catch (error) {
+    // Errores de dominio (404 servicio, 400 código inválido, 409 slot ocupado)
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     next(error);
   }
 }
@@ -189,10 +245,13 @@ async function updateStatus(req, res, next) {
       data: { estado },
     });
 
-    // Si se cancela, enviar email
+    // Si se cancela, enviar email en segundo plano
     if (estado === 'CANCELADA') {
-      sendAppointmentCancellation(citaExistente, citaExistente.usuario, citaExistente.servicio);
+      sendAppointmentCancellation(citaExistente, citaExistente.usuario, citaExistente.servicio)
+        .catch((err) => logger.error({ err }, 'Error enviando email de cancelación de cita'));
     }
+
+    audit({ usuarioId: req.user.id, accion: `ESTADO_CITA_${estado}`, entidad: 'cita', entidadId: citaId, ip: req.ip });
 
     res.json({
       success: true,
@@ -229,7 +288,8 @@ async function remove(req, res, next) {
       data: { estado: 'CANCELADA' },
     });
 
-    sendAppointmentCancellation(cita, cita.usuario, cita.servicio);
+    sendAppointmentCancellation(cita, cita.usuario, cita.servicio)
+      .catch((err) => logger.error({ err }, 'Error enviando email de cancelación'));
 
     res.json({ success: true, message: 'Cita cancelada' });
   } catch (error) {

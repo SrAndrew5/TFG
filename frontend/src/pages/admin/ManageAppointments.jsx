@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
+import StatusBadge from '../../components/shared/StatusBadge';
+import { usePageTitle } from '../../hooks/usePageTitle';
+import { formatDate, formatDateLong } from '../../utils/dateUtils';
 import {
   HiOutlinePencilSquare,
   HiOutlineXMark,
@@ -22,6 +25,7 @@ const STATUS_MAP = {
 };
 
 export default function ManageAppointments() {
+  usePageTitle('Gestión de Citas');
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Todas');
@@ -48,7 +52,6 @@ export default function ManageAppointments() {
       setAppointments(res.data.data);
     } catch (err) {
       toast.error('Error al cargar las reservas');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -115,32 +118,6 @@ export default function ManageAppointments() {
     }
   };
 
-  const getStatusBadge = (estado) => {
-    const styles = {
-      PENDIENTE: 'text-warning-text bg-warning-bg border-warning-border',
-      CONFIRMADA: 'text-success-text bg-success-bg border-success-border',
-      COMPLETADA: 'text-brand-700 bg-brand-50 border-brand-200',
-      CANCELADA: 'text-danger-text bg-danger-bg border-danger-border',
-    };
-    const dots = {
-      PENDIENTE: 'bg-warning animate-pulse',
-      CONFIRMADA: 'bg-success',
-      COMPLETADA: 'bg-brand-500',
-      CANCELADA: 'bg-danger',
-    };
-    const labels = {
-      PENDIENTE: 'Pendiente',
-      CONFIRMADA: 'Confirmada',
-      COMPLETADA: 'Completada',
-      CANCELADA: 'Cancelada',
-    };
-    return (
-      <span className={`flex items-center gap-1.5 text-xs font-bold border px-2.5 py-1 rounded-full w-fit ${styles[estado]}`}>
-        <div className={`w-1.5 h-1.5 rounded-full ${dots[estado]}`} />
-        {labels[estado]}
-      </span>
-    );
-  };
 
   const tabCount = (tab) => {
     if (tab === 'Todas') return appointments.length;
@@ -159,7 +136,7 @@ export default function ManageAppointments() {
     <div className="space-y-8 animate-fade-in pb-12">
 
       <div>
-        <h1 className="text-3xl font-extrabold text-text-primary mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <h1 className="text-3xl font-extrabold text-text-primary mb-1">
           Gestión de Reservas
         </h1>
         <p className="text-text-secondary">Controla el flujo de citas en tiempo real.</p>
@@ -230,7 +207,7 @@ export default function ManageAppointments() {
                     <div className="flex flex-col gap-0.5">
                       <span className="flex items-center text-xs text-text-secondary font-semibold">
                         <HiOutlineCalendar className="w-3 h-3 mr-1 text-text-muted shrink-0" />
-                        {new Date(apt.fecha).toLocaleDateString('es-ES')}
+                        {formatDate(apt.fecha)}
                       </span>
                       <span className="flex items-center text-[11px] text-text-muted font-medium">
                         <HiOutlineClock className="w-3 h-3 mr-1 shrink-0" />
@@ -240,7 +217,7 @@ export default function ManageAppointments() {
                   </td>
 
                   <td className="py-3 px-2 whitespace-nowrap">
-                    {getStatusBadge(apt.estado)}
+                    <StatusBadge variant="dot" estado={apt.estado} />
                   </td>
 
                   <td className="py-3 px-2 text-right whitespace-nowrap min-w-[150px]">
@@ -288,7 +265,8 @@ export default function ManageAppointments() {
                         <button
                           onClick={() => requestCancel(apt)}
                           className="w-8 h-8 rounded-lg bg-white border border-border-base hover:bg-danger-bg hover:text-danger-text hover:border-danger-border text-text-secondary flex items-center justify-center transition-all shadow-xs"
-                          title="Cancelar"
+                          title="Cancelar cita"
+                          aria-label="Cancelar cita"
                         >
                           <HiOutlineXMark className="w-4 h-4" />
                         </button>
@@ -317,12 +295,12 @@ export default function ManageAppointments() {
           <div className="bg-white rounded-[2rem] shadow-[0_24px_60px_rgba(31,41,55,0.2)] max-w-md w-full relative z-10 animate-scale-in flex flex-col overflow-hidden border border-border-base/50">
             <div className="px-8 py-6 border-b border-border-base bg-surface-subtle/50 flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-extrabold text-text-primary" style={{ fontFamily: 'Sora, sans-serif' }}>
+                <h2 className="text-xl font-extrabold text-text-primary">
                   Detalles de la Cita
                 </h2>
                 <p className="text-xs text-text-secondary mt-1">#{viewingApt.id}</p>
               </div>
-              <button onClick={() => setDetailsModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
+              <button onClick={() => setDetailsModalOpen(false)} aria-label="Cerrar detalle" className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-text-secondary hover:bg-danger-bg hover:text-danger-text transition-colors">
                 <HiOutlineXMark className="w-5 h-5" />
               </button>
             </div>
@@ -331,9 +309,9 @@ export default function ManageAppointments() {
                 ['Cliente', `${viewingApt.usuario?.nombre} ${viewingApt.usuario?.apellidos}`],
                 ['Servicio', viewingApt.servicio?.nombre],
                 ['Especialista', `${viewingApt.empleado?.nombre} ${viewingApt.empleado?.apellidos}`],
-                ['Fecha', new Date(viewingApt.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })],
+                ['Fecha', formatDateLong(viewingApt.fecha)],
                 ['Hora', `${viewingApt.hora_inicio} – ${viewingApt.hora_fin}`],
-                ['Precio', `${parseFloat(viewingApt.servicio?.precio || 0).toFixed(2)}€`],
+                ['Precio', `${parseFloat(viewingApt.precio_pagado || viewingApt.servicio?.precio || 0).toFixed(2)}€`],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between items-center border-b border-border-base pb-3">
                   <span className="text-xs font-bold uppercase tracking-wider text-text-muted">{label}</span>
@@ -342,7 +320,7 @@ export default function ManageAppointments() {
               ))}
               <div className="flex justify-between items-center pt-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-text-muted">Estado</span>
-                {getStatusBadge(viewingApt.estado)}
+                <StatusBadge variant="dot" estado={viewingApt.estado} />
               </div>
             </div>
             <div className="px-8 py-5 bg-surface-subtle/50 border-t border-border-base flex justify-end">
@@ -360,7 +338,7 @@ export default function ManageAppointments() {
             <div className="w-20 h-20 bg-danger-bg rounded-full mx-auto flex items-center justify-center mb-6">
               <HiOutlineExclamationTriangle className="w-10 h-10 text-danger-text" />
             </div>
-            <h3 className="text-2xl font-bold text-text-primary mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <h3 className="text-2xl font-bold text-text-primary mb-2">
               Cancelar Reserva
             </h3>
             <p className="text-sm text-text-secondary mb-8">

@@ -6,57 +6,55 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [onLoginSuccess, setOnLoginSuccess] = useState(null);
 
+  // La cookie httpOnly es la única fuente de verdad.
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
-      // Verificar que el token sigue siendo válido
-      api.get('/auth/me')
-        .then((res) => {
-          setUser(res.data.data);
-          localStorage.setItem('user', JSON.stringify(res.data.data));
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    api.get('/auth/me')
+      .then((res) => setUser(res.data.data))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
-    const { usuario, token } = res.data.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(usuario));
+    const { usuario } = res.data.data;
     setUser(usuario);
+    if (onLoginSuccess) {
+      onLoginSuccess();
+      setOnLoginSuccess(null);
+    }
+    setLoginModalOpen(false);
     return usuario;
   };
 
   const register = async (data) => {
     const res = await api.post('/auth/register', data);
-    const { usuario, token } = res.data.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(usuario));
-    setUser(usuario);
-    return usuario;
+    return res.data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try { await api.post('/auth/logout'); } catch { /* ignorar */ }
     setUser(null);
   };
 
-  const isAdmin = user?.rol === 'ADMIN';
+  const updateUser = (updatedData) => {
+    setUser((prev) => ({ ...prev, ...updatedData }));
+  };
+
+  const openLoginModal = (onSuccess = null) => {
+    setOnLoginSuccess(() => onSuccess);
+    setLoginModalOpen(true);
+  };
+
+  const isAdmin = user?.rol === 'ADMIN' || user?.rol === 'SUPERADMIN';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin }}>
+    <AuthContext.Provider value={{ 
+      user, loading, login, register, logout, isAdmin, updateUser,
+      loginModalOpen, setLoginModalOpen, openLoginModal
+    }}>
       {children}
     </AuthContext.Provider>
   );

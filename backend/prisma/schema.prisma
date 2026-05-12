@@ -23,12 +23,21 @@ model Usuario {
   telefono   String?  @db.VarChar(20)
   rol        Rol      @default(CLIENTE)
   avatar_url String?  @db.VarChar(500)
-  activo     Boolean  @default(true)
-  created_at DateTime @default(now())
+  activo              Boolean  @default(true)
+  motivo_suspension   String?  @db.VarChar(500)
+  email_verificado    Boolean  @default(false)
+  created_at          DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  citas            Cita[]
-  reservas_recurso ReservaRecurso[]
+  citas               Cita[]
+  reservas_recurso    ReservaRecurso[]
+  password_reset_token PasswordResetToken?
+  email_verification_token EmailVerificationToken?
+  notifications       Notification[]
+  reviews             Review[]
+  refresh_tokens      RefreshToken[]
+  // Relación 1:1 con Business cuando el usuario es BUSINESS_OWNER. NULL para CLIENTE/ADMIN.
+  business            Business? @relation("BusinessOwner")
 
   @@map("usuarios")
 }
@@ -42,12 +51,16 @@ model Empleado {
   especialidad String?  @db.VarChar(200)
   avatar_url   String?  @db.VarChar(500)
   activo       Boolean  @default(true)
+  // FK a Business — NULLABLE: los empleados creados antes del módulo SaaS no pertenecen a ninguno.
+  business_id  Int?
   created_at   DateTime @default(now())
 
   servicios        ServicioEmpleado[]
   disponibilidades Disponibilidad[]
   citas            Cita[]
+  business         Business? @relation(fields: [business_id], references: [id], onDelete: SetNull)
 
+  @@index([business_id])
   @@map("empleados")
 }
 
@@ -60,11 +73,15 @@ model Servicio {
   categoria    String?  @db.VarChar(100)
   imagen_url   String?  @db.VarChar(500)
   activo       Boolean  @default(true)
+  business_id  Int?
   created_at   DateTime @default(now())
 
   empleados ServicioEmpleado[]
   citas     Cita[]
+  reviews   Review[]
+  business  Business? @relation(fields: [business_id], references: [id], onDelete: SetNull)
 
+  @@index([business_id])
   @@map("servicios")
 }
 
@@ -95,26 +112,36 @@ model Disponibilidad {
 }
 
 model Cita {
-  id          Int        @id @default(autoincrement())
-  usuario_id  Int
-  empleado_id Int
-  servicio_id Int
-  fecha       DateTime   @db.Date
-  hora_inicio String     @db.VarChar(5) // "10:00"
-  hora_fin    String     @db.VarChar(5) // "10:45"
-  estado      EstadoCita @default(PENDIENTE)
-  notas       String?    @db.Text
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
+  id                Int        @id @default(autoincrement())
+  usuario_id        Int
+  empleado_id       Int
+  servicio_id       Int
+  fecha             DateTime   @db.Date
+  hora_inicio       String     @db.VarChar(5) // "10:00"
+  hora_fin          String     @db.VarChar(5) // "10:45"
+  estado            EstadoCita @default(PENDIENTE)
+  notas             String?    @db.Text
+  precio_pagado     Decimal?   @db.Decimal(10, 2)
+  codigo_descuento  String?    @db.VarChar(50)
+  // Marca cuándo se envió la notificación "¿qué tal tu experiencia?". Null si aún no.
+  // Sirve como flag idempotente para el cron post-servicio.
+  review_request_sent_at DateTime?
+  // FK a Business — NULLABLE: las citas históricas no pertenecen a ningún negocio.
+  business_id       Int?
+  created_at        DateTime   @default(now())
+  updated_at        DateTime   @updatedAt
 
   usuario  Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
   empleado Empleado @relation(fields: [empleado_id], references: [id], onDelete: Cascade)
   servicio Servicio @relation(fields: [servicio_id], references: [id], onDelete: Cascade)
+  review   Review?
+  business Business? @relation(fields: [business_id], references: [id], onDelete: SetNull)
 
   @@index([usuario_id])
   @@index([empleado_id])
   @@index([servicio_id])
   @@index([fecha])
+  @@index([business_id])
   @@map("citas")
 }
 
@@ -123,42 +150,213 @@ model Cita {
 // =============================================
 
 model Recurso {
-  id           Int         @id @default(autoincrement())
-  nombre       String      @db.VarChar(150)
-  tipo         TipoRecurso
-  descripcion  String?     @db.Text
-  capacidad    Int         @default(1)
-  ubicacion    String?     @db.VarChar(200) // "Planta 2, Zona A"
-  precio_hora  Decimal     @db.Decimal(10, 2)
-  imagen_url   String?     @db.VarChar(500)
-  equipamiento String?     @db.Text // "Proyector, Pizarra, WiFi"
-  activo       Boolean     @default(true)
-  created_at   DateTime    @default(now())
+  id                Int         @id @default(autoincrement())
+  nombre            String      @db.VarChar(150)
+  tipo              TipoRecurso
+  descripcion       String?     @db.Text
+  capacidad         Int         @default(1)
+  ubicacion         String?     @db.VarChar(200)
+  precio_hora       Decimal     @db.Decimal(10, 2)
+  imagen_url        String?     @db.VarChar(500)
+  equipamiento      String?     @db.Text
+  activo            Boolean     @default(true)
+  horario_apertura  String      @default("08:00") @db.VarChar(5)
+  horario_cierre    String      @default("20:00") @db.VarChar(5)
+  latitud           Decimal?    @db.Decimal(10, 7)
+  longitud          Decimal?    @db.Decimal(10, 7)
+  business_id       Int?
+  created_at        DateTime    @default(now())
 
   reservas ReservaRecurso[]
+  reviews  Review[]
+  business Business? @relation(fields: [business_id], references: [id], onDelete: SetNull)
 
+  @@index([business_id])
   @@map("recursos")
 }
 
 model ReservaRecurso {
-  id          Int           @id @default(autoincrement())
-  usuario_id  Int
-  recurso_id  Int
-  fecha       DateTime      @db.Date
-  hora_inicio String        @db.VarChar(5)
-  hora_fin    String        @db.VarChar(5)
-  estado      EstadoReserva @default(PENDIENTE)
-  notas       String?       @db.Text
-  created_at  DateTime      @default(now())
-  updated_at  DateTime      @updatedAt
+  id                Int           @id @default(autoincrement())
+  usuario_id        Int
+  recurso_id        Int
+  fecha             DateTime      @db.Date
+  hora_inicio       String        @db.VarChar(5)
+  hora_fin          String        @db.VarChar(5)
+  estado            EstadoReserva @default(PENDIENTE)
+  notas             String?       @db.Text
+  precio_pagado     Decimal?      @db.Decimal(10, 2)
+  codigo_descuento  String?       @db.VarChar(50)
+  review_request_sent_at DateTime?
+  business_id       Int?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
 
-  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
-  recurso Recurso @relation(fields: [recurso_id], references: [id], onDelete: Cascade)
+  usuario  Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  recurso  Recurso  @relation(fields: [recurso_id], references: [id], onDelete: Cascade)
+  review   Review?
+  business Business? @relation(fields: [business_id], references: [id], onDelete: SetNull)
 
   @@index([usuario_id])
   @@index([recurso_id])
   @@index([fecha])
+  @@index([business_id])
   @@map("reservas_recursos")
+}
+
+// =============================================
+// MÓDULO SAAS — NEGOCIOS REGISTRADOS
+// =============================================
+
+model Business {
+  id             Int       @id @default(autoincrement())
+  nombre         String    @db.VarChar(150)
+  slug           String    @unique @db.VarChar(180)
+  tipo           String    @db.VarChar(40) // PELUQUERIA | BARBERIA | COWORKING | SPA | CENTRO_ESTETICA | GIMNASIO | OTRO
+  cif_nif        String    @unique @db.VarChar(20)
+  descripcion    String?   @db.Text
+  direccion      String    @db.VarChar(255)
+  ciudad         String    @db.VarChar(100)
+  codigo_postal  String    @db.VarChar(10)
+  lat            Float?
+  lng            Float?
+  telefono       String    @db.VarChar(20)
+  web            String?   @db.VarChar(255)
+  logo_url       String?   @db.VarChar(500)
+  fotos_urls     Json?     // Array de URLs de Cloudinary
+  horario        Json?     // { lunes: { cerrado: boolean, franjas: [{abre, cierra}] }, ... }
+  festivos       Json?     // Array de fechas "YYYY-MM-DD"
+  estado         BusinessEstado @default(PENDIENTE)
+  motivo_rechazo String?   @db.VarChar(500) // Se rellena en RECHAZADO o SUSPENDIDO
+
+  owner_id       Int       @unique
+  owner          Usuario   @relation("BusinessOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+
+  // Relaciones inversas — NULL en datos legacy mientras no se migren
+  servicios        Servicio[]
+  empleados        Empleado[]
+  recursos         Recurso[]
+  citas            Cita[]
+  reservas_recurso ReservaRecurso[]
+
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@index([estado])
+  @@index([ciudad])
+  @@index([lat, lng])
+  @@map("businesses")
+}
+
+// =============================================
+// TABLAS DE SOPORTE
+// =============================================
+
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int      @unique
+  token      String   @unique @db.VarChar(255)
+  expira_at  DateTime
+  created_at DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int      @unique
+  token      String   @unique @db.VarChar(255) // hash SHA-256 del token; el raw solo viaja por email
+  expira_at  DateTime
+  created_at DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int
+  type       String   @db.VarChar(20) // info | success | warning | error
+  title      String   @db.VarChar(200)
+  body       String?  @db.Text
+  read       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id, read])
+  @@index([usuario_id, created_at])
+  @@map("notifications")
+}
+
+model CodigoDescuento {
+  id             Int       @id @default(autoincrement())
+  codigo         String    @unique @db.VarChar(50) // Siempre se almacena en MAYÚSCULAS
+  porcentaje     Int       // 1..100
+  descripcion    String?   @db.VarChar(255)
+  max_usos       Int?      // null = sin límite
+  usos_actuales  Int       @default(0)
+  fecha_expiry   DateTime? // null = sin expiración
+  activo         Boolean   @default(true)
+  created_at     DateTime  @default(now())
+
+  @@map("codigos_descuento")
+}
+
+model Review {
+  id                  Int       @id @default(autoincrement())
+  usuario_id          Int
+  // Exactamente uno de los dos pares debe estar populado, validado en aplicación.
+  // Servicio + Cita van juntos (la cita es la "prueba de servicio"), igual con Recurso + Reserva.
+  servicio_id         Int?
+  recurso_id          Int?
+  cita_id             Int?      @unique // unique → impide doble review por la misma cita
+  reserva_recurso_id  Int?      @unique
+  rating              Int       // 1..5, validado en Joi y a nivel de aplicación
+  comentario          String?   @db.Text
+  created_at          DateTime  @default(now())
+
+  usuario  Usuario          @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  servicio Servicio?        @relation(fields: [servicio_id], references: [id], onDelete: Cascade)
+  recurso  Recurso?         @relation(fields: [recurso_id], references: [id], onDelete: Cascade)
+  cita     Cita?            @relation(fields: [cita_id], references: [id], onDelete: SetNull)
+  reserva  ReservaRecurso?  @relation(fields: [reserva_recurso_id], references: [id], onDelete: SetNull)
+
+  @@index([servicio_id])
+  @@index([recurso_id])
+  @@index([usuario_id])
+  @@map("reviews")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int?
+  accion     String   @db.VarChar(100)
+  entidad    String   @db.VarChar(50)
+  entidad_id Int?
+  datos      Json?
+  ip         String?  @db.VarChar(45)
+  created_at DateTime @default(now())
+
+  @@index([usuario_id])
+  @@index([entidad, entidad_id])
+  @@map("audit_logs")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int
+  token_hash String   @unique @db.VarChar(255)
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id])
+  @@map("refresh_tokens")
 }
 
 // =============================================
@@ -168,6 +366,7 @@ model ReservaRecurso {
 enum Rol {
   CLIENTE
   ADMIN
+  BUSINESS_OWNER
 }
 
 enum EstadoCita {
@@ -189,4 +388,11 @@ enum TipoRecurso {
   SALA
   PUESTO
   DESPACHO
+}
+
+enum BusinessEstado {
+  PENDIENTE
+  ACTIVO
+  SUSPENDIDO
+  RECHAZADO
 }
