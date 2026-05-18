@@ -73,7 +73,7 @@ export default function ForgotPassword() {
       </div>
 
       {/* ── Panel Derecho ── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-20 bg-surface-base">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-20" style={{ backgroundColor: '#F8F9FA' }}>
         <div className="w-full max-w-md animate-fade-up">
 
           <Link

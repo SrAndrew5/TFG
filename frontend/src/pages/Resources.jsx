@@ -36,7 +36,7 @@ export default function Resources() {
               { label: 'Sin fianza', sub: 'Pago por uso', icon: '💳' },
             ].map((item) => (
               <div key={item.label} className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-brand-200/50">{item.label}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/60">{item.label}</p>
                 <p className="text-sm font-bold text-white flex items-center gap-2">
                   <span className="text-xs">{item.icon}</span> {item.sub}
                 </p>

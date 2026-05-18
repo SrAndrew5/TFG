@@ -1,5 +1,11 @@
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  HiOutlineNoSymbol,
+  HiOutlineEnvelope,
+  HiOutlineArrowRightOnRectangle,
+  HiOutlineShieldExclamation,
+} from 'react-icons/hi2';
 
 export default function AccountSuspendedPage() {
   const [searchParams] = useSearchParams();
@@ -12,40 +18,61 @@ export default function AccountSuspendedPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-          </svg>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="w-full max-w-md animate-fade-up">
+
+        <div className="w-20 h-20 rounded-[2rem] bg-danger-bg flex items-center justify-center mx-auto mb-8 shadow-sm">
+          <HiOutlineNoSymbol className="w-10 h-10 text-danger-text" />
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Cuenta suspendida</h1>
-        <p className="text-gray-500 mb-6">
-          Tu cuenta ha sido suspendida temporalmente. No puedes iniciar sesión mientras dure la suspensión.
-        </p>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-black text-brand-500 tracking-tighter mb-3">
+            Cuenta suspendida
+          </h1>
+          <p className="text-text-secondary font-medium leading-relaxed">
+            Tu cuenta ha sido suspendida temporalmente. No puedes iniciar sesión mientras dure la suspensión.
+          </p>
+        </div>
 
         {motivo && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-left">
-            <p className="text-sm font-semibold text-red-700 mb-1">Motivo</p>
-            <p className="text-sm text-red-600">{motivo}</p>
+          <div className="bg-white border-l-4 border-red-400 rounded-2xl p-5 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <HiOutlineShieldExclamation className="w-4 h-4 text-danger-text" />
+              <p className="text-xs font-black uppercase tracking-widest text-danger-text">Motivo de la suspensión</p>
+            </div>
+            <p className="text-sm font-medium text-red-800">{motivo}</p>
           </div>
         )}
 
-        <p className="text-sm text-gray-500 mb-8">
-          Si crees que se trata de un error, contacta con soporte en{' '}
-          <a href="mailto:soporte@reservas.local" className="text-indigo-600 hover:underline font-medium">
-            soporte@reservas.local
-          </a>
-        </p>
+        <div className="bg-white border border-border-base rounded-[2rem] p-6 mb-6 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center flex-shrink-0">
+            <HiOutlineEnvelope className="w-5 h-5 text-brand-500" />
+          </div>
+          <div>
+            <p className="text-sm font-black text-brand-500 mb-1">¿Crees que es un error?</p>
+            <p className="text-sm text-text-secondary font-medium">
+              Contacta con soporte en{' '}
+              <a
+                href="mailto:soporte@reservaspro.com"
+                className="text-accent-500 font-black hover:underline"
+              >
+                soporte@reservaspro.com
+              </a>
+            </p>
+          </div>
+        </div>
 
         <button
           onClick={handleLogout}
-          className="w-full py-3 px-4 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+          className="btn-primary w-full py-4 flex items-center justify-center gap-2"
         >
+          <HiOutlineArrowRightOnRectangle className="w-5 h-5" />
           Cerrar sesión
         </button>
+
+        <p className="mt-6 text-center text-xs text-text-muted font-bold uppercase tracking-widest">
+          RESERVAS TFG · Cuenta suspendida
+        </p>
       </div>
     </div>
   );

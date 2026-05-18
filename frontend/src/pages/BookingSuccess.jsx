@@ -34,8 +34,8 @@ export default function BookingSuccess() {
   const dayNumber  = fecha ? parseInt(fecha.split('-')[2], 10) : null;
 
   return (
-    <div className="flex flex-col items-center text-center py-10 animate-fade-in bg-surface-subtle"
-      style={{ borderRadius: 24, minHeight: 500 }}>
+    <div className="flex flex-col items-center text-center py-10 animate-fade-in"
+      style={{ backgroundColor: '#F8F9FA', borderRadius: 24, minHeight: 500 }}>
 
       {/* ── Icono animado ── */}
       <div className="success-icon-wrap mt-8">

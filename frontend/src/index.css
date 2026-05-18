@@ -81,9 +81,9 @@
   .modal-input:-webkit-autofill,
   .modal-input:-webkit-autofill:hover,
   .modal-input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #0f172a;
-    -webkit-box-shadow: 0 0 0 1000px #F1F3F5 inset;
-    box-shadow: 0 0 0 1000px #F1F3F5 inset;
+    -webkit-text-fill-color: #ffffff;
+    -webkit-box-shadow: 0 0 0 1000px #0C1B18 inset;
+    box-shadow: 0 0 0 1000px #0C1B18 inset;
   }
   .bento-card {
     @apply bg-white border border-slate-100 rounded-[2.5rem] p-8 transition-all duration-500 hover:shadow-lg;

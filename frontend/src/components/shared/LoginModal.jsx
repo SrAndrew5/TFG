@@ -60,7 +60,7 @@ export default function LoginModal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
-                  className="modal-input w-full bg-surface-subtle border-none rounded-2xl pl-12 pr-4 py-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-4 focus:ring-brand-500/5 transition-all outline-none"
+                  className="modal-input w-full bg-brand-800 border-none rounded-2xl pl-12 pr-4 py-4 text-sm font-medium text-white placeholder:text-brand-400 focus:bg-brand-700 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none"
                 />
               </div>
             </div>
@@ -75,7 +75,7 @@ export default function LoginModal() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="modal-input w-full bg-surface-subtle border-none rounded-2xl pl-12 pr-4 py-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-4 focus:ring-brand-500/5 transition-all outline-none"
+                  className="modal-input w-full bg-brand-800 border-none rounded-2xl pl-12 pr-4 py-4 text-sm font-medium text-white placeholder:text-brand-400 focus:bg-brand-700 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none"
                 />
               </div>
             </div>
