@@ -53,7 +53,10 @@ Integrar librerías como `i18next` para habilitar una plataforma bilingüe (Espa
     *   *URL:* [https://pm2.keymetrics.io/docs/usage/quick-start/](https://pm2.keymetrics.io/docs/usage/quick-start/)
 6.  **W3C Service Workers & PWAs Specification:** Estándares para el empaquetado de Aplicaciones Web Progresivas instalables y caching.
     *   *URL:* [https://www.w3.org/TR/service-workers/](https://www.w3.org/TR/service-workers/)
-
+7. **Gemini:** Referencia para ideas de mejora y ampliación del proyecto.
+    *   *URL:* [https://gemini.com/](https://gemini.com/)
+8. **Claude:** Ayuda en arreglo de errores, instrucciones y explicaciones.
+    *   *URL:* [https://claude.com/](https://claude.com/)
 ---
 
 ## CAPÍTULO 8: ANEXOS (GLOSARIO TÉCNICO)
