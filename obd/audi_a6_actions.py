@@ -223,3 +223,60 @@ class AudiA6Actions:
             time.sleep(0.02)
 
         return resultados
+
+    # ──────────────────────────────────────────────────────────────────────────
+    #  ACTIVAR MENÚ VERDE OCULTO (GREEN ENGINEERING MENU) EN MMI
+    #  Módulo 07 (Control Head) -> Canal 08 = 1 (MMI 2G) / Módulo 5F -> Canal 06 = 1 (MMI 3G)
+    # ──────────────────────────────────────────────────────────────────────────
+    def activar_menu_verde_mmi(self) -> Tuple[bool, str]:
+        """
+        Activa el Menú Verde Oculto (Engineering Test Mode) en la pantalla central MMI.
+        Prueba Módulo 07 (MMI 2G High, Canal 08) y Módulo 5F (MMI 3G, Canal 06).
+        """
+        self._emit("\n" + "=" * 55)
+        self._emit("  ACTIVACIÓN MENÚ VERDE OCULTO MMI (AUDI A6 C6)")
+        self._emit("=" * 55)
+
+        # 1. Intentar MMI 2G High (Módulo 07)
+        self._emit("[MMI] Probando Módulo 07 (Control Head / MMI 2G)...")
+        if self.tp20.open_channel(0x07, retries=2):
+            try:
+                self.kwp.start_diagnostic_session(0x86)
+                time.sleep(0.04)
+                self._emit("[MMI 07] Escribiendo valor 1 en Canal de Adaptación 08...")
+                if self.kwp.write_adaptation(channel=8, value=1):
+                    msg = (
+                        "¡Menú Verde activado con éxito en MMI 2G (Canal 08 = 1)!\n"
+                        "Para reiniciar el MMI: Pulsa a la vez SETUP + Botón Giratorio Central + Botón Superior Derecho.\n"
+                        "Para abrir el Menú Verde: Mantén pulsados CAR + SETUP a la vez durante 5 segundos."
+                    )
+                    self._emit(f"✓ {msg}")
+                    return True, msg
+            except Exception as e:
+                self._emit(f"Error en Módulo 07: {e}")
+            finally:
+                self.tp20.close_channel()
+
+        # 2. Intentar MMI 3G (Módulo 5F)
+        self._emit("[MMI] Probando Módulo 5F (Information Electronics / MMI 3G)...")
+        if self.tp20.open_channel(0x5F, retries=2):
+            try:
+                self.kwp.start_diagnostic_session(0x86)
+                time.sleep(0.04)
+                self._emit("[MMI 5F] Escribiendo valor 1 en Canal de Adaptación 06...")
+                if self.kwp.write_adaptation(channel=6, value=1):
+                    msg = (
+                        "¡Menú Verde activado con éxito en MMI 3G (Canal 06 = 1)!\n"
+                        "Para abrir el Menú Verde: Mantén pulsados CAR + SETUP (o CAR + MENU) durante 5 segundos."
+                    )
+                    self._emit(f"✓ {msg}")
+                    return True, msg
+            except Exception as e:
+                self._emit(f"Error en Módulo 5F: {e}")
+            finally:
+                self.tp20.close_channel()
+
+        err = "No se pudo comunicar con el sistema MMI (ni Módulo 07 ni 5F)."
+        self._emit(f"✗ {err}")
+        return False, err
+

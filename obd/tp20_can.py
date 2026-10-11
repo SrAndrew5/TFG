@@ -665,20 +665,29 @@ class KWP2000NativeClient:
 
         return None
 
-    def write_coding(self, coding_bytes: bytes) -> bool:
+    def read_adaptation(self, channel: int) -> Optional[int]:
         """
-        Escribe el Long Coding en el módulo (Service 0x3B sub 0x9E).
+        Lee un canal de adaptación KWP2000 (Service 0x21 subfunction=channel o Service 0x22).
         """
-        for subfn in (0x9E, 0x00):
+        try:
+            resp = self.execute_service(0x21, subfunction=channel)
+            if resp and len(resp) >= 2:
+                val = struct.unpack(">H", resp[:2])[0]
+                return val
+        except Exception:
+            pass
+        return None
+
+    def write_adaptation(self, channel: int, value: int) -> bool:
+        """
+        Escribe un nuevo valor en un canal de adaptación KWP2000 (Service 0x3D o 0x2E).
+        """
+        val_bytes = struct.pack(">H", value)
+        for sid in (0x3D, 0x2B):
             try:
-                self.execute_service(0x3B, subfunction=subfn, data=coding_bytes)
+                self.execute_service(sid, subfunction=channel, data=val_bytes)
                 return True
             except Exception:
                 continue
-        try:
-            # Probar alternativo UDS WriteDataByIdentifier 0x2E 0x0600
-            self.execute_service(0x2E, subfunction=None, data=b"\x06\x00" + coding_bytes)
-            return True
-        except Exception as e:
-            diag_logger.log_error("Fallo escribiendo coding", str(e))
-            return False
+        return False
+
