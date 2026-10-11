@@ -1,0 +1,25 @@
+Copyright (c) 2026 SrAndrew. All Rights Reserved.
+
+PROPRIETARY AND PORTFOLIO VIEW-ONLY LICENSE
+
+This repository and its contents (including all source code, documentation, assets, 
+database definitions, and protocol implementations) are the exclusive intellectual 
+property of SrAndrew.
+
+TERMS AND CONDITIONS:
+
+1. Permitted Use:
+   - You may view, read, and inspect the source code solely for the purpose of 
+     professional recruitment, technical evaluation, code review, and academic/portfolio assessment.
+
+2. Express Prohibitions (Without Prior Written Consent):
+   - You may NOT compile, execute, run, or deploy this software (or any part thereof) 
+     for automotive diagnosis, vehicle ECU modification, repair, commercial use, or personal production.
+   - You may NOT modify, fork for alteration, adapt, translate, reverse engineer, 
+     or create derivative works based on this software.
+   - You may NOT redistribute, sublicense, lease, publish, mirror, or sell any part 
+     of this codebase in any format (source code, binary, or compiled package).
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER 
+LIABILITY ARISING FROM THE USE OR MISUSE OF THIS SOFTWARE.
